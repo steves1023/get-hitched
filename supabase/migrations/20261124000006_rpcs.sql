@@ -7,7 +7,7 @@ create table public.invites (
   display_name text not null,
   role         public.member_role not null check (role <> 'owner'),
   access       jsonb not null default '{}'::jsonb,
-  token        text not null unique default encode(gen_random_bytes(24), 'hex'),
+  token        text not null unique default encode(extensions.gen_random_bytes(24), 'hex'),
   expires_at   timestamptz not null default now() + interval '14 days',
   accepted_at  timestamptz,
   created_by   uuid default auth.uid() references auth.users(id) on delete set null,
