@@ -48,11 +48,11 @@ export interface Entitlement {
 }
 
 /** Display prices. Stripe charges whatever the price IDs say, so keep these in step with Stripe. */
-export const PRICING = { pass: '$29.99', seat: '$1.99', seatCents: 199, includedWithPass: 5, includedFree: 2 } as const;
+export const PRICING = { pass: '$29.99', seat: '$1.99', seatCents: 199, includedWithPass: 5 } as const;
 
 /** People besides the couple this wedding may have. Mirrors public.seat_limit(). */
 export const seatLimit = (hasPass: boolean, extraSeats: number) =>
-  hasPass ? PRICING.includedWithPass + extraSeats : PRICING.includedFree;
+  hasPass ? PRICING.includedWithPass + extraSeats : 0;
 export interface Summary {
   wedding_id: string; total_budget: number; tasks_total: number; tasks_done: number;
   guests_total: number; rsvp_yes: number; rsvp_pending: number; spent: number;

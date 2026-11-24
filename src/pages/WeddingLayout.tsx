@@ -7,6 +7,7 @@ import { daysUntil, fullDate } from '../lib/format';
 import type { Level, Module } from '../lib/types';
 import { ErrorNote, Loading } from '../components/ui';
 import ShareModal from '../components/ShareModal';
+import Billing from './Billing';
 
 const TABS: { to: string; module: Module | null; label: string; assignedLabel?: string }[] = [
   { to: '', module: null, label: 'Overview' },
@@ -34,6 +35,7 @@ export default function WeddingLayout() {
   }
   const a = q.data;
   const days = daysUntil(a.wedding.wedding_date);
+  const unpaid = !a.everPaid;
   const visible = TABS.filter((t) => !t.module || a.levels[t.module] !== 'none');
   const label = (t: (typeof TABS)[number]) => (t.module && a.levels[t.module] === ('assigned' as Level) && t.assignedLabel) || t.label;
 
@@ -43,9 +45,9 @@ export default function WeddingLayout() {
         <Link id="hTitle" to={`/w/${a.wedding.id}`}>✦ Get Hitched</Link>
         <div className="hr">
           {a.wedding.wedding_date && <span className="hdate">{fullDate(a.wedding.wedding_date)}</span>}
-          {a.isCouple && <button className="hbtn" onClick={() => setShare(true)}>⇄ Share</button>}
-          {a.isCouple && <Link className="hbtn" to="settings">⚙ Settings</Link>}
-          {a.isCouple && <Link className="hbtn" to="billing">💳 Billing</Link>}
+          {a.isCouple && a.hasPass && <button className="hbtn" onClick={() => setShare(true)}>⇄ Share</button>}
+          {a.isCouple && !unpaid && <Link className="hbtn" to="settings">⚙ Settings</Link>}
+          {a.isCouple && !unpaid && <Link className="hbtn" to="billing">💳 Billing</Link>}
           <button className="hbtn" onClick={() => supabase.auth.signOut()}>Sign Out</button>
         </div>
       </header>
@@ -55,13 +57,33 @@ export default function WeddingLayout() {
           <span className="cd-l">{days > 0 ? 'Days until your wedding' : days === 0 ? 'Today’s the day' : 'Congratulations'}</span>
         </div>
       )}
-      <nav id="nav" aria-label="Sections">
-        {visible.map((t) => (
-          <NavLink key={t.to} to={t.to} end={t.to === ''} className={({ isActive }) => `tab${isActive ? ' on' : ''}`}>{label(t)}</NavLink>
-        ))}
-      </nav>
-      <main id="content"><Outlet /></main>
-      {a.isCouple && <ShareModal open={share} onClose={() => setShare(false)} />}
+      {unpaid ? (
+        <main id="content">
+          {a.isCouple ? <Billing /> : (
+            <div className="card lock">
+              <h2 className="ct" style={{ justifyContent: 'center' }}>This wedding isn’t active yet</h2>
+              <p className="muted">{a.wedding.partner1} and {a.wedding.partner2} need to activate it. Once they do, reload this page.</p>
+            </div>
+          )}
+        </main>
+      ) : (
+        <>
+          <nav id="nav" aria-label="Sections">
+            {visible.map((t) => (
+              <NavLink key={t.to} to={t.to} end={t.to === ''} className={({ isActive }) => `tab${isActive ? ' on' : ''}`}>{label(t)}</NavLink>
+            ))}
+          </nav>
+          <main id="content">
+            {a.expired && (
+              <p className="card small" style={{ padding: '12px 18px' }}>
+                Your Wedding Pass ended{a.entitlement?.valid_until ? ` on ${fullDate(a.entitlement.valid_until)}` : ''}. Everything is saved and view-only.
+              </p>
+            )}
+            <Outlet />
+          </main>
+        </>
+      )}
+      {a.isCouple && a.hasPass && <ShareModal open={share} onClose={() => setShare(false)} />}
     </AccessProvider>
   );
 }

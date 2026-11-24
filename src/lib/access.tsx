@@ -9,6 +9,10 @@ export interface Access {
   levels: Record<Module, Level>;
   isCouple: boolean;
   hasPass: boolean;
+  /** Paid at some point (pass may have expired). */
+  everPaid: boolean;
+  /** Paid before but the pass has ended: everything is view-only. */
+  expired: boolean;
   entitlement: Entitlement | null;
 }
 
@@ -41,9 +45,14 @@ export function useLoadAccess(weddingId: string, userId: string) {
         for (const r of rows ?? []) levels[r.module as Module] = r.level as Level;
       }
       const entitlement = (ent.data as Entitlement | null) ?? null;
-      const hasPass = !!entitlement && entitlement.plan !== 'free' &&
-        (!entitlement.valid_until || entitlement.valid_until >= new Date().toISOString().slice(0, 10));
-      return { wedding: w.data as Wedding, me, levels, isCouple, hasPass, entitlement };
+      const everPaid = !!entitlement && entitlement.plan !== 'free';
+      const hasPass = everPaid && (!entitlement!.valid_until || entitlement!.valid_until >= new Date().toISOString().slice(0, 10));
+      const expired = everPaid && !hasPass;
+      // Same rules as public.my_access(): unpaid = nothing; expired = read-only.
+      if (!hasPass) {
+        for (const k of MODULES) levels[k] = expired ? (levels[k] === 'edit' ? 'read' : levels[k]) : 'none';
+      }
+      return { wedding: w.data as Wedding, me, levels, isCouple, hasPass, everPaid, expired, entitlement };
     },
   });
 }

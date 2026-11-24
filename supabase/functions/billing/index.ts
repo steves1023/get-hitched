@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
 
   if (action === 'pass') {
     if (hasPass) return json({ error: 'ALREADY_HAS_PASS' }, 400);
+    if (ent && ent.plan !== 'free') return json({ error: 'PASS_ENDED' }, 400);  // a repurchase would already be expired
     const price = Deno.env.get('STRIPE_PRICE_PASS');
     if (!price) return json({ error: 'PRICE_NOT_CONFIGURED' }, 500);
     const session = await stripe.checkout.sessions.create({

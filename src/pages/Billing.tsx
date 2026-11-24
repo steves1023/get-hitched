@@ -9,12 +9,12 @@ import { PRICING, seatLimit, type Invite } from '../lib/types';
 import { useMembers, useRows } from '../hooks/data';
 import { Bar, PageHeader } from '../components/ui';
 
-const PASS_FEATURES = [`${PRICING.includedWithPass} people besides the two of you, more for ${PRICING.seat} each`,
+const PASS_FEATURES = ['Tasks, vendors, budget and guest list', `Share with ${PRICING.includedWithPass} people besides the two of you, more for ${PRICING.seat} each`,
   'Unlimited guests', 'Seating chart', 'Wedding day timeline', 'Unlimited vision board images', '2 GB of files',
   'About 25 hashtag generations a day'];
 
 export default function Billing() {
-  const { wedding, isCouple, entitlement, hasPass } = useAccess();
+  const { wedding, isCouple, entitlement, hasPass, everPaid } = useAccess();
   const [params] = useSearchParams();
   const qc = useQueryClient();
   const members = useMembers(wedding.id);
@@ -63,7 +63,12 @@ export default function Billing() {
 
   return (
     <>
-      <PageHeader title="Billing" sub="Your plan" />
+      {everPaid ? <PageHeader title="Billing" sub="Your plan" /> : (
+        <>
+          <h1 className="pt">Welcome, {wedding.partner1} &amp; {wedding.partner2}</h1>
+          <div className="ps">Activate your wedding to start planning</div>
+        </>
+      )}
       {status === 'success' && !hasPass && <p className="ok">Payment received. Unlocking your Wedding Pass…</p>}
       {status === 'seats' && <p className="ok">Payment received. New spots appear here within a few seconds.</p>}
       {status === 'cancelled' && <p className="muted small">Checkout was cancelled. Nothing was charged.</p>}
@@ -71,26 +76,32 @@ export default function Billing() {
       <div className="g2">
         <div className="card">
           <h2 className="ct">Current plan</h2>
-          <p className="sn" style={{ fontSize: '1.6rem' }}>{hasPass ? 'Wedding Pass' : 'Free'}</p>
+          <p className="sn" style={{ fontSize: '1.6rem' }}>{hasPass ? 'Wedding Pass' : everPaid ? 'Ended' : 'Not active yet'}</p>
           {hasPass && entitlement?.valid_until && <p className="muted">Active through {fullDate(entitlement.valid_until)}</p>}
-          <div style={{ marginTop: 14 }}>
+          {!everPaid && <p className="muted">Get the Wedding Pass or enter a code to unlock every planning tool.</p>}
+          {hasPass && <div style={{ marginTop: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>People besides the two of you</span><b>{used} of {limit}</b>
             </div>
             <Bar pct={limit ? Math.min(100, Math.round((used / limit) * 100)) : 100} />
-            {hasPass && extra > 0 && <p className="small muted">{PRICING.includedWithPass} included + {extra} added</p>}
-          </div>
+            {extra > 0 && <p className="small muted">{PRICING.includedWithPass} included + {extra} added</p>}
+          </div>}
           {entitlement?.stripe_customer_id && (
             <button className="btn g" style={{ marginTop: 14 }} disabled={busy} onClick={() => go({ action: 'portal' })}>Receipts and billing details</button>
           )}
         </div>
 
-        {!hasPass ? (
+        {!everPaid ? (
           <div className="card">
             <h2 className="ct">Wedding Pass · {PRICING.pass}</h2>
-            <p style={{ marginBottom: 10 }}>One payment, valid through your wedding date plus 90 days.</p>
+            <p style={{ marginBottom: 10 }}>One payment, valid through your wedding date plus 90 days. After that, everything stays saved and view-only.</p>
             <ul style={{ paddingLeft: 18, marginBottom: 16 }}>{PASS_FEATURES.map((f) => <li key={f}>{f}</li>)}</ul>
             <button className="btn" disabled={busy} onClick={() => go({ action: 'pass' })}>Get the Wedding Pass</button>
+          </div>
+        ) : !hasPass ? (
+          <div className="card">
+            <h2 className="ct">Your wedding is wrapped up</h2>
+            <p>Everything you planned stays here to look back on. Need more time? Reply to your receipt email and we’ll sort it out.</p>
           </div>
         ) : (
           <div className="card">
@@ -108,7 +119,7 @@ export default function Billing() {
         )}
       </div>
 
-      {!hasPass && (
+      {!everPaid && (
         <form className="card" onSubmit={redeem} style={{ maxWidth: 520 }}>
           <h2 className="ct">Have a code?</h2>
           <div style={{ display: 'flex', gap: 8 }}>

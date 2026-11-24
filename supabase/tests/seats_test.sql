@@ -18,17 +18,16 @@ insert into public.wedding_members (wedding_id, user_id, role, display_name) val
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-0000000000e1","email":"couple@test.dev"}';
 
--- Free wedding: 2 people besides the couple
-select lives_ok($$insert into invites (wedding_id, email, display_name, role) values
-  ('10000000-0000-0000-0000-0000000000e1','a@x.dev','A','family'),
-  ('10000000-0000-0000-0000-0000000000e1','b@x.dev','B','wedding_party')$$, 'free: first 2 people allowed');
-select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','c@x.dev','C','family')$$,
-  'P0001', 'SEAT_LIMIT', 'free: 3rd person blocked');
+-- Unpaid wedding: nobody besides the partner
+select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','a@x.dev','A','family')$$,
+  'P0001', 'SEAT_LIMIT', 'unpaid: helpers blocked');
+select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','c@x.dev','C','wedding_party')$$,
+  'P0001', 'SEAT_LIMIT', 'unpaid: still blocked');
 select lives_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','p@x.dev','P','partner')$$,
   'partner never counts against seats');
 select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','p2@x.dev','P2','partner')$$,
   'P0001', 'PARTNER_EXISTS', 'only one partner');
-select is(public.seat_limit('10000000-0000-0000-0000-0000000000e1'), 2, 'free limit is 2');
+select is(public.seat_limit('10000000-0000-0000-0000-0000000000e1'), 0, 'unpaid limit is 0');
 
 -- Pass wedding: 5 included
 select lives_ok($$insert into invites (wedding_id, email, display_name, role)

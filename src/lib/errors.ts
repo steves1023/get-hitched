@@ -15,6 +15,7 @@ const MESSAGES: Record<string, string> = {
   NOT_ALLOWED: 'You don’t have permission to do that.',
   SPICY_NOT_CONFIRMED: 'Confirm you’re both 18+ to use the Spicy vibe.',
   GENERATION_FAILED: 'Couldn’t generate hashtags right now. Try again in a moment.',
+  PASS_ENDED: 'This wedding’s pass has already ended, so it can’t be bought again.',
   PROMO_INVALID: 'That code isn’t valid or has expired. Check the spelling and try again.',
   PROMO_ALREADY_USED: 'This wedding has already used that code.',
   ALREADY_HAS_PASS: 'This wedding already has the Wedding Pass, so there’s no need for a code.',
