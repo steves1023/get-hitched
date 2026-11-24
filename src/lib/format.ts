@@ -67,3 +67,8 @@ export function initials(name: string): string {
 export function pct(part: number, whole: number): number {
   return whole > 0 ? Math.min(100, Math.round((part / whole) * 100)) : 0;
 }
+
+/** Exact amount with cents, for prices. */
+export function moneyCents(cents: number): string {
+  return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+}

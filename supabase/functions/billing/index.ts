@@ -1,5 +1,6 @@
-// POST { action: 'checkout', wedding_id, plan: 'pass' | 'monthly' } -> { url }
-// POST { action: 'portal', wedding_id } -> { url }
+// POST { action: 'pass', wedding_id }            -> { url }  Wedding Pass checkout ($29.99, includes 5 people)
+// POST { action: 'seats', wedding_id, qty? }     -> { url }  Extra people ($1.99 each, quantity adjustable at checkout)
+// POST { action: 'portal', wedding_id }          -> { url }  Stripe customer portal (receipts)
 import Stripe from 'npm:stripe@17.7.0';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { adminClient, requireUser } from '../_shared/clients.ts';
@@ -14,7 +15,7 @@ Deno.serve(async (req) => {
   const auth = await requireUser(req);
   if (!auth) return json({ error: 'NOT_SIGNED_IN' }, 401);
 
-  const { action, wedding_id, plan } = await req.json().catch(() => ({}));
+  const { action, wedding_id, qty } = await req.json().catch(() => ({}));
   if (!wedding_id) return json({ error: 'BAD_REQUEST' }, 400);
 
   const { data: isCouple } = await auth.supa.rpc('is_couple', { w: wedding_id });
@@ -24,6 +25,12 @@ Deno.serve(async (req) => {
   const back = `${site}/w/${wedding_id}/billing`;
   const admin = adminClient();
   const { data: ent } = await admin.from('entitlements').select('*').eq('wedding_id', wedding_id).single();
+  const { data: hasPass } = await admin.rpc('has_pass', { w: wedding_id });
+
+  // Reuse the Stripe customer after the first purchase so receipts stay together in the portal.
+  const customer = ent?.stripe_customer_id
+    ? { customer: ent.stripe_customer_id as string }
+    : { customer_email: auth.user.email, customer_creation: 'always' as const };
 
   if (action === 'portal') {
     if (!ent?.stripe_customer_id) return json({ error: 'NO_CUSTOMER' }, 400);
@@ -31,19 +38,37 @@ Deno.serve(async (req) => {
     return json({ url: session.url });
   }
 
-  if (action === 'checkout') {
-    const price = plan === 'monthly' ? Deno.env.get('STRIPE_PRICE_MONTHLY') : Deno.env.get('STRIPE_PRICE_PASS');
+  if (action === 'pass') {
+    if (hasPass) return json({ error: 'ALREADY_HAS_PASS' }, 400);
+    const price = Deno.env.get('STRIPE_PRICE_PASS');
     if (!price) return json({ error: 'PRICE_NOT_CONFIGURED' }, 500);
     const session = await stripe.checkout.sessions.create({
-      mode: plan === 'monthly' ? 'subscription' : 'payment',
+      mode: 'payment',
       line_items: [{ price, quantity: 1 }],
-      customer: ent?.stripe_customer_id ?? undefined,
-      customer_email: ent?.stripe_customer_id ? undefined : auth.user.email,
-      customer_creation: plan === 'monthly' || ent?.stripe_customer_id ? undefined : 'always',
+      ...customer,
+      allow_promotion_codes: true,
+      invoice_creation: { enabled: true },
       client_reference_id: wedding_id,
-      metadata: { wedding_id, plan: plan === 'monthly' ? 'monthly' : 'pass' },
-      subscription_data: plan === 'monthly' ? { metadata: { wedding_id } } : undefined,
+      metadata: { wedding_id, kind: 'pass' },
       success_url: `${back}?status=success`,
+      cancel_url: `${back}?status=cancelled`,
+    });
+    return json({ url: session.url });
+  }
+
+  if (action === 'seats') {
+    if (!hasPass) return json({ error: 'PASS_REQUIRED' }, 400);
+    const price = Deno.env.get('STRIPE_PRICE_SEAT');
+    if (!price) return json({ error: 'PRICE_NOT_CONFIGURED' }, 500);
+    const start = Math.max(1, Math.min(100, Number(qty) || 1));
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [{ price, quantity: start, adjustable_quantity: { enabled: true, minimum: 1, maximum: 100 } }],
+      ...customer,
+      invoice_creation: { enabled: true },
+      client_reference_id: wedding_id,
+      metadata: { wedding_id, kind: 'seats' },
+      success_url: `${back}?status=seats`,
       cancel_url: `${back}?status=cancelled`,
     });
     return json({ url: session.url });

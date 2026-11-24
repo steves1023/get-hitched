@@ -1,7 +1,9 @@
 const MESSAGES: Record<string, string> = {
   FREE_LIMIT_GUESTS: 'The free plan holds 50 guests. Get the Wedding Pass to add more.',
   FREE_LIMIT_VISION: 'The free plan holds 20 inspiration images. Get the Wedding Pass for unlimited images.',
-  FREE_LIMIT_COLLABORATORS: 'This wedding has reached the free plan’s 4 people. The couple can get the Wedding Pass to invite more.',
+  FREE_LIMIT_COLLABORATORS: 'This wedding has reached its limit of people. The couple can add more on the Billing page.',
+  SEAT_LIMIT: 'All of this wedding’s spots for people are taken. The couple can add more on the Billing page.',
+  PARTNER_EXISTS: 'This wedding already has a partner. Invite this person with a different role.',
   FREE_LIMIT_HASHTAGS: 'The free plan includes 3 hashtag generations. Get the Wedding Pass for more.',
   HASHTAG_DAILY_LIMIT: 'You’ve reached today’s hashtag limit. Try again tomorrow.',
   FILES_STORAGE_FULL: 'File storage is full for your plan. Delete files or get the Wedding Pass for 2 GB.',
@@ -13,6 +15,9 @@ const MESSAGES: Record<string, string> = {
   NOT_ALLOWED: 'You don’t have permission to do that.',
   SPICY_NOT_CONFIRMED: 'Confirm you’re both 18+ to use the Spicy vibe.',
   GENERATION_FAILED: 'Couldn’t generate hashtags right now. Try again in a moment.',
+  PROMO_INVALID: 'That code isn’t valid or has expired. Check the spelling and try again.',
+  PROMO_ALREADY_USED: 'This wedding has already used that code.',
+  ALREADY_HAS_PASS: 'This wedding already has the Wedding Pass, so there’s no need for a code.',
   '42501': 'You don’t have permission to do that.',
 };
 

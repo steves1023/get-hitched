@@ -42,7 +42,17 @@ export interface Invite {
   id: string; wedding_id: string; email: string; display_name: string; role: Role;
   access: Partial<Record<Module, Level>>; token: string; expires_at: string; accepted_at: string | null;
 }
-export interface Entitlement { wedding_id: string; plan: 'free' | 'pass' | 'monthly'; valid_until: string | null; stripe_customer_id: string | null }
+export interface Entitlement {
+  wedding_id: string; plan: 'free' | 'pass' | 'monthly'; valid_until: string | null;
+  stripe_customer_id: string | null; extra_seats: number;
+}
+
+/** Display prices. Stripe charges whatever the price IDs say, so keep these in step with Stripe. */
+export const PRICING = { pass: '$29.99', seat: '$1.99', seatCents: 199, includedWithPass: 5, includedFree: 2 } as const;
+
+/** People besides the couple this wedding may have. Mirrors public.seat_limit(). */
+export const seatLimit = (hasPass: boolean, extraSeats: number) =>
+  hasPass ? PRICING.includedWithPass + extraSeats : PRICING.includedFree;
 export interface Summary {
   wedding_id: string; total_budget: number; tasks_total: number; tasks_done: number;
   guests_total: number; rsvp_yes: number; rsvp_pending: number; spent: number;

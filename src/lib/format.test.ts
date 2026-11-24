@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dueBadge, daysUntil, money, pct, time12, initials } from './format';
+import { dueBadge, daysUntil, money, moneyCents, pct, time12, initials } from './format';
 
 const now = new Date(2026, 10, 22); // Nov 22, 2026
 
@@ -17,4 +17,8 @@ describe('helpers', () => {
   it('formats 12-hour time', () => { expect(time12('08:00:00')).toBe('8:00 AM'); expect(time12('15:45')).toBe('3:45 PM'); expect(time12('00:30')).toBe('12:30 AM'); });
   it('computes capped percentages', () => { expect(pct(12150, 32000)).toBe(38); expect(pct(5, 0)).toBe(0); expect(pct(50, 10)).toBe(100); });
   it('builds initials', () => expect(initials('Sarah Miller')).toBe('SM'));
+});
+
+describe('moneyCents', () => {
+  it('keeps cents', () => { expect(moneyCents(995)).toBe('$9.95'); expect(moneyCents(2999)).toBe('$29.99'); });
 });

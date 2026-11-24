@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAccess } from '../lib/access';
 import { supabase } from '../lib/supabase';
 import { useMembers, useRows } from '../hooks/data';
 import { friendly, functionError } from '../lib/errors';
-import { MODULES, MODULE_LABEL, ROLE_LABEL, ROLE_PRESETS, type Invite, type Level, type Member, type Module, type Role } from '../lib/types';
+import { MODULES, MODULE_LABEL, PRICING, ROLE_LABEL, ROLE_PRESETS, seatLimit, type Invite, type Level, type Member, type Module, type Role } from '../lib/types';
 import { Badge, Modal } from './ui';
 
 type InvitableRole = Exclude<Role, 'owner'>;
@@ -38,7 +39,7 @@ function AccessGrid({ value, onChange, disabled }: { value: Record<Module, Level
 }
 
 export default function ShareModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { wedding, me } = useAccess();
+  const { wedding, me, hasPass, entitlement } = useAccess();
   const qc = useQueryClient();
   const members = useMembers(wedding.id);
   const invites = useRows<Invite>('invites', wedding.id, 'created_at', false);
@@ -107,6 +108,10 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
 
   const pending = (invites.data ?? []).filter((i) => !i.accepted_at);
   const isCoupleRole = (r: Role) => r === 'owner' || r === 'partner';
+  const limit = seatLimit(hasPass, entitlement?.extra_seats ?? 0);
+  const used = (members.data ?? []).filter((m) => !isCoupleRole(m.role)).length
+    + pending.filter((i) => i.role !== 'partner' && i.expires_at > new Date().toISOString()).length;
+  const full = role !== 'partner' && used >= limit;
 
   return (
     <Modal open={open} onClose={onClose} title="Share your wedding">
@@ -151,6 +156,16 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
           )}
 
           <h3 className="ct" style={{ marginTop: 18 }}>Invite someone</h3>
+          <p className="small" style={{ marginBottom: 10 }}>
+            <b>{used} of {limit}</b> spots used. Your partner doesn’t take a spot; open invites do.
+          </p>
+          {full && (
+            <p className="small" style={{ marginBottom: 10 }}>
+              All spots are taken. {hasPass
+                ? <>Add more people for {PRICING.seat} each on <Link to={`/w/${wedding.id}/billing`} onClick={onClose}>Billing</Link>.</>
+                : <>The <Link to={`/w/${wedding.id}/billing`} onClick={onClose}>Wedding Pass</Link> includes {PRICING.includedWithPass}, and you can add more after that.</>}
+            </p>
+          )}
           <form onSubmit={sendInvite}>
             <div className="g2">
               <label className="field"><span>Name *</span><input required value={name} onChange={(e) => setName(e.target.value)} /></label>
@@ -173,7 +188,7 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
                 <button type="button" className="btn g" onClick={() => navigator.clipboard.writeText(link)}>Copy</button>
               </div>
             )}
-            <button className="btn" disabled={busy} style={{ marginTop: 10 }}>{busy ? 'Sending…' : 'Send invite'}</button>
+            <button className="btn" disabled={busy || full} style={{ marginTop: 10 }}>{busy ? 'Sending…' : 'Send invite'}</button>
           </form>
         </>
       )}
