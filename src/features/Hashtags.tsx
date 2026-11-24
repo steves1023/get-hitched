@@ -26,6 +26,7 @@ export default function Hashtags() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [confirmSpicy, setConfirmSpicy] = useState(false);
+  const [keywords, setKeywords] = useState('');
 
   const pickVibe = (id: string) => {
     if (id === 'spicy' && !wedding.spicy_confirmed_at) {
@@ -44,7 +45,7 @@ export default function Hashtags() {
 
   const generate = async () => {
     setBusy(true); setError('');
-    const { data, error } = await supabase.functions.invoke('generate-hashtags', { body: { wedding_id: wedding.id, vibe } });
+    const { data, error } = await supabase.functions.invoke('generate-hashtags', { body: { wedding_id: wedding.id, vibe, keywords: keywords.trim() } });
     setBusy(false);
     if (error) return setError(await functionError(error));
     m.refresh();
@@ -66,7 +67,12 @@ export default function Hashtags() {
             <Info label="Partner 2" value={wedding.partner2} />
             <Info label="Last name(s)" value={wedding.last_names} />
             <Info label="Theme" value={wedding.theme} />
-            {isCouple && <p className="small muted">Change these in Settings.</p>}
+            {isCouple && <p className="small muted" style={{ marginBottom: 12 }}>Change these in Settings.</p>}
+            <label className="field" style={{ marginBottom: 0 }}><span>Keywords (optional)</span>
+              <input value={keywords} maxLength={120} placeholder="Wrigley, Ann Arbor, tacos, our dog Max"
+                onChange={(e) => setKeywords(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !busy) generate(); }} />
+            </label>
+            <p className="small muted" style={{ marginTop: 4 }}>Places, pets, hobbies or inside jokes to build hashtags around. Separate with commas.</p>
           </div>
           <div className="card">
             <h2 className="ct">Pick your vibe</h2>
