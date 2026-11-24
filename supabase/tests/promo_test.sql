@@ -30,7 +30,7 @@ select throws_ok($$select public.redeem_promo_code('10000000-0000-0000-0000-0000
   'P0001', 'PROMO_INVALID', 'unknown code is rejected');
 select throws_ok($$select public.redeem_promo_code('10000000-0000-0000-0000-0000000000d1', 'old-code')$$,
   'P0001', 'PROMO_INVALID', 'expired code is rejected');
-select is(public.redeem_promo_code('10000000-0000-0000-0000-0000000000d1', ' friends-7k2m9q '), '2027-09-18'::date,
+select is((public.redeem_promo_code('10000000-0000-0000-0000-0000000000d1', ' friends-7k2m9q ')->>'valid_until')::date, '2027-09-18'::date,
   'valid code grants the pass through wedding date + 90 days (case and spaces ignored)');
 select ok(public.has_pass('10000000-0000-0000-0000-0000000000d1'), 'wedding now has the pass');
 select throws_ok($$select public.redeem_promo_code('10000000-0000-0000-0000-0000000000d2', 'FRIENDS-7K2M9Q')$$,

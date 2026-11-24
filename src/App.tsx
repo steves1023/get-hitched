@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './lib/auth';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import Landing from './pages/Landing';
 import Onboarding from './pages/Onboarding';
 import AcceptInvite from './pages/AcceptInvite';
 import WeddingLayout from './pages/WeddingLayout';
@@ -28,12 +29,19 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** Signed-out visitors see the landing page; signed-in people go to their wedding. */
+function Root() {
+  const { session, loading } = useAuth();
+  if (loading) return null;
+  return session ? <Home /> : <Landing />;
+}
+
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/invite/:token" element={<AcceptInvite />} />
-      <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
+      <Route path="/" element={<Root />} />
       <Route path="/new" element={<RequireAuth><Onboarding /></RequireAuth>} />
       <Route path="/w/:weddingId" element={<RequireAuth><WeddingLayout /></RequireAuth>}>
         <Route index element={<Overview />} />

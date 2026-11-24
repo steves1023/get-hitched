@@ -8,9 +8,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setLoading(false); });
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    return () => data.subscription.unsubscribe();
+    // Never leave the page blank: if the session check is slow (bad network), render as signed out
+    // and update as soon as the real answer arrives.
+    const fallback = setTimeout(() => setLoading(false), 2500);
+    supabase.auth.getSession()
+      .then(({ data }) => setSession(data.session))
+      .finally(() => { clearTimeout(fallback); setLoading(false); });
+    const { data } = supabase.auth.onAuthStateChange((_e, s) => { setSession(s); setLoading(false); });
+    return () => { clearTimeout(fallback); data.subscription.unsubscribe(); };
   }, []);
   return <AuthCtx.Provider value={{ session, loading }}>{children}</AuthCtx.Provider>;
 }

@@ -57,7 +57,10 @@ export default function Billing() {
     setBusy(false);
     if (error) return setError(friendly(error));
     setCode('');
-    setCodeMsg(`Code applied. Your Wedding Pass is active through ${fullDate(data as string)}.`);
+    const r = data as { kind: 'pass'; valid_until: string } | { kind: 'seats'; seats_added: number; seat_limit: number };
+    setCodeMsg(r.kind === 'pass'
+      ? `Code applied. Your Wedding Pass is active through ${fullDate(r.valid_until)}.`
+      : `Code applied. ${r.seats_added} more ${r.seats_added === 1 ? 'person' : 'people'} added, so you can now have ${r.seat_limit} besides the two of you.`);
     qc.invalidateQueries({ queryKey: ['access'] });
   };
 
@@ -119,9 +122,10 @@ export default function Billing() {
         )}
       </div>
 
-      {!everPaid && (
+      {(!everPaid || hasPass) && (
         <form className="card" onSubmit={redeem} style={{ maxWidth: 520 }}>
           <h2 className="ct">Have a code?</h2>
+          {hasPass && <p className="small muted" style={{ marginTop: -6, marginBottom: 10 }}>Codes for extra people are added to your total right away.</p>}
           <div style={{ display: 'flex', gap: 8 }}>
             <input className="input" aria-label="Promo code" placeholder="Enter your code" value={code} required
               autoCapitalize="characters" autoComplete="off" onChange={(e) => setCode(e.target.value)} />
