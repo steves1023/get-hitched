@@ -14,30 +14,30 @@ insert into public.entitlements (wedding_id, plan, valid_until) values
 insert into public.wedding_members (wedding_id, user_id, role, display_name)
 select w, '00000000-0000-0000-0000-0000000000a9', 'owner', 'Owner'
 from unnest(array['10000000-0000-0000-0000-0000000000a9','10000000-0000-0000-0000-0000000000b9']::uuid[]) w;
-insert into public.promo_codes (code, kind, seats) values ('PLUS5', 'seats', 5);
+insert into public.promo_codes (code, kind, seats) values ('FAMILY2', 'full_seats', 2), ('PARTY6', 'party_seats', 6);
 
-select throws_ok($$insert into public.promo_codes (code, kind) values ('BROKEN', 'seats')$$,
+select throws_ok($$insert into public.promo_codes (code, kind) values ('BROKEN', 'party_seats')$$,
   '23514', null, 'a people code must say how many people');
-select throws_ok($$insert into public.promo_codes (code, seats) values ('BROKEN2', 3)$$,
-  '23514', null, 'a pass code cannot carry a people count');
 
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-0000000000a9","email":"couple@test.dev"}';
 
-select throws_ok($$select public.redeem_promo_code('10000000-0000-0000-0000-0000000000a9', 'plus5')$$,
+select throws_ok($$select public.redeem_promo_code('10000000-0000-0000-0000-0000000000a9', 'party6')$$,
   'P0001', 'PROMO_NEEDS_PASS', 'people code on an unpaid wedding asks for the pass first');
 reset role;
-select is((select redemptions from public.promo_codes where code = 'PLUS5'), 0, '...and the code is not used up');
+select is((select redemptions from public.promo_codes where code = 'PARTY6'), 0, '...and the code is not used up');
 set local role authenticated;
 
-select is(public.redeem_promo_code('10000000-0000-0000-0000-0000000000b9', 'plus5'),
-  '{"kind":"seats","seats_added":5,"seat_limit":10}'::jsonb, 'people code adds 5 to a paid wedding (5 included + 5)');
-select is(public.seat_limit('10000000-0000-0000-0000-0000000000b9'), 10, 'limit is now 10');
+select is(public.redeem_promo_code('10000000-0000-0000-0000-0000000000b9', 'family2'),
+  '{"kind":"full_seats","seats_added":2,"seat_limit":2}'::jsonb, 'family code adds 2 Parents and Planners spots');
+select is(public.redeem_promo_code('10000000-0000-0000-0000-0000000000b9', 'PARTY6'),
+  '{"kind":"party_seats","seats_added":6,"seat_limit":6}'::jsonb, 'party code adds 6 Wedding Party spots');
+select is(public.seat_limit('10000000-0000-0000-0000-0000000000b9', 'full'), 2, 'full spots unchanged by the party code');
 select lives_ok($$insert into public.invites (wedding_id, email, display_name, role)
-  select '10000000-0000-0000-0000-0000000000b9', 'g' || i || '@x.dev', 'G' || i, 'family' from generate_series(1,10) i$$,
-  'ten people can now be invited');
-select throws_ok($$select public.redeem_promo_code('10000000-0000-0000-0000-0000000000b9', 'PLUS5')$$,
-  'P0001', 'PROMO_ALREADY_USED', 'a wedding cannot stack the same people code');
+  select '10000000-0000-0000-0000-0000000000b9', 'g' || i || '@x.dev', 'G' || i, 'wedding_party' from generate_series(1,6) i$$,
+  'six bridesmaids can now be invited');
+select throws_ok($$select public.redeem_promo_code('10000000-0000-0000-0000-0000000000b9', 'PARTY6')$$,
+  'P0001', 'PROMO_ALREADY_USED', 'a wedding cannot stack the same code');
 
 select * from finish();
 rollback;

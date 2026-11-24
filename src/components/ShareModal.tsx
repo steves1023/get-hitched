@@ -5,11 +5,16 @@ import { useAccess } from '../lib/access';
 import { supabase } from '../lib/supabase';
 import { useMembers, useRows } from '../hooks/data';
 import { friendly, functionError } from '../lib/errors';
-import { MODULES, MODULE_LABEL, PRICING, ROLE_LABEL, ROLE_PRESETS, seatLimit, type Invite, type Level, type Member, type Module, type Role } from '../lib/types';
+import { MODULES, MODULE_LABEL, PRICING, ROLE_LABEL, ROLE_PRESETS, seatLimit, seatTypeOf, type Invite, type Level, type Member, type Module, type Role, type SeatType } from '../lib/types';
 import { Badge, Modal } from './ui';
 
 type InvitableRole = Exclude<Role, 'owner'>;
 const ROLES: InvitableRole[] = ['partner', 'planner', 'family', 'wedding_party', 'vendor'];
+const SPOT_NAME: Record<SeatType, string> = { full: PRICING.fullName, party: PRICING.partyName };
+const roleOption = (r: InvitableRole) => {
+  const t = seatTypeOf(r);
+  return t ? `${ROLE_LABEL[r]} · uses a ${SPOT_NAME[t]} spot` : `${ROLE_LABEL[r]} · free`;
+};
 const LEVELS: { value: Level; label: string }[] = [
   { value: 'none', label: 'Hidden' }, { value: 'assigned', label: 'Only theirs' }, { value: 'read', label: 'View' }, { value: 'edit', label: 'Edit' },
 ];
@@ -107,11 +112,11 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
   };
 
   const pending = (invites.data ?? []).filter((i) => !i.accepted_at);
-  const isCoupleRole = (r: Role) => r === 'owner' || r === 'partner';
-  const limit = seatLimit(hasPass, entitlement?.extra_seats ?? 0);
-  const used = (members.data ?? []).filter((m) => !isCoupleRole(m.role)).length
-    + pending.filter((i) => i.role !== 'partner' && i.expires_at > new Date().toISOString()).length;
-  const full = role !== 'partner' && used >= limit;
+  const now = new Date().toISOString();
+  const used = (t: SeatType) => (members.data ?? []).filter((m) => seatTypeOf(m.role) === t).length
+    + pending.filter((i) => i.expires_at > now && seatTypeOf(i.role) === t).length;
+  const roleType = seatTypeOf(role);
+  const full = !!roleType && used(roleType) >= seatLimit(hasPass, entitlement, roleType);
 
   return (
     <Modal open={open} onClose={onClose} title="Share your wedding">
@@ -132,9 +137,10 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
             <div className="row" key={m.id} style={{ alignItems: 'center' }}>
               <div style={{ flex: 1 }}>
                 <div className="nm">{m.display_name}{m.id === me.id ? ' (you)' : ''}</div>
-                <div className="chips"><Badge tone="bb">{ROLE_LABEL[m.role]}</Badge></div>
+                <div className="chips"><Badge tone="bb">{ROLE_LABEL[m.role]}</Badge>
+                  {seatTypeOf(m.role) === 'party' && <Badge tone="bw">Wedding Day only</Badge>}</div>
               </div>
-              {!isCoupleRole(m.role) && <button className="btn g sm" onClick={() => openEdit(m)}>Access</button>}
+              {seatTypeOf(m.role) === 'full' && <button className="btn g sm" onClick={() => openEdit(m)}>Access</button>}
               {m.role !== 'owner' && m.id !== me.id && <button className="btn danger sm" onClick={() => removeMember(m)}>Remove</button>}
             </div>
           ))}
@@ -157,13 +163,13 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
 
           <h3 className="ct" style={{ marginTop: 18 }}>Invite someone</h3>
           <p className="small" style={{ marginBottom: 10 }}>
-            <b>{used} of {limit}</b> spots used. Your partner doesn’t take a spot; open invites do.
+            Spots in use: <b>{used('full')} of {seatLimit(hasPass, entitlement, 'full')}</b> {PRICING.fullName} ·{' '}
+            <b>{used('party')} of {seatLimit(hasPass, entitlement, 'party')}</b> {PRICING.partyName}. Your partner is free; open invites hold a spot.
           </p>
-          {full && (
+          {full && roleType && (
             <p className="small" style={{ marginBottom: 10 }}>
-              All spots are taken. {hasPass
-                ? <>Add more people for {PRICING.seat} each on <Link to={`/w/${wedding.id}/billing`} onClick={onClose}>Billing</Link>.</>
-                : <>The <Link to={`/w/${wedding.id}/billing`} onClick={onClose}>Wedding Pass</Link> includes {PRICING.includedWithPass}, and you can add more after that.</>}
+              No {SPOT_NAME[roleType]} spots left. Add more for {roleType === 'full' ? PRICING.full : PRICING.party} each on{' '}
+              <Link to={`/w/${wedding.id}/billing`} onClick={onClose}>Billing</Link>.
             </p>
           )}
           <form onSubmit={sendInvite}>
@@ -173,13 +179,15 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
             </div>
             <label className="field"><span>Role</span>
               <select value={role} onChange={(e) => setRole(e.target.value as InvitableRole)}>
-                {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                {ROLES.map((r) => <option key={r} value={r}>{roleOption(r)}</option>)}
               </select>
             </label>
             <p className="muted small" style={{ marginBottom: 8 }}>
-              {role === 'partner' ? 'Partners can see and change everything.' : 'Start from the preset, then adjust any tab.'}
+              {role === 'partner' ? 'Partners can see and change everything.'
+                : roleType === 'party' ? 'Sees only the Wedding Day tab: items for the wedding party and items you assign to them.'
+                : 'Starts with full access. Hide any tab you’d rather they didn’t see.'}
             </p>
-            <AccessGrid value={access} onChange={setAccess} disabled={role === 'partner'} />
+            {roleType === 'full' && <AccessGrid value={access} onChange={setAccess} />}
             {error && <p className="err">{error}</p>}
             {msg && <p className="ok">{msg}</p>}
             {link && (

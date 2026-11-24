@@ -111,15 +111,15 @@ export default function Landing() {
         <div className="lp-wrap">
           <div className="lp-head">
             <h2>Share the right parts with the right people</h2>
-            <p>Invite your planner, parents and wedding party. You choose what each person can see, tab by tab. Your bridesmaids never see the budget.</p>
+            <p>Parents and planners get full planning access, minus any tab you hide. Your wedding party sees just the day’s schedule: their moments and anything you assign them.</p>
           </div>
           <div className="lp-share">
-            <Person initials="PL" name="Your planner" role="Planner"
+            <Person initials="PL" name="Your planner" role={PRICING.fullName}
               rows={[['Tasks', 'Edit'], ['Vendors', 'Edit'], ['Guests & seating', 'Edit'], ['Wedding day', 'Edit'], ['Budget', 'View']]} />
-            <Person initials="M" name="Mom" role="Family"
-              rows={[['Her tasks', 'Only hers'], ['Guest list', 'View'], ['Seating', 'View'], ['Wedding day', 'View'], ['Budget', null]]} />
-            <Person initials="B" name="Bea" role="Wedding party"
-              rows={[['Her tasks', 'Only hers'], ['Day-of schedule', 'Her parts'], ['Vision board', 'View'], ['Guest list', null], ['Budget', null]]} />
+            <Person initials="M" name="Mom" role={PRICING.fullName}
+              rows={[['Tasks', 'Edit'], ['Guest list', 'Edit'], ['Seating', 'Edit'], ['Wedding day', 'Edit'], ['Budget', null]]} />
+            <Person initials="B" name="Bea" role={PRICING.partyName}
+              rows={[['Day-of schedule', 'Her parts'], ['Tasks', null], ['Guest list', null], ['Vision board', null], ['Budget', null]]} />
           </div>
         </div>
       </section>
@@ -129,35 +129,41 @@ export default function Landing() {
           <div className="lp-head"><h2>Up and running in minutes</h2></div>
           <div className="lp-steps">
             <div className="lp-step"><h3>Tell us the basics</h3><p>Your names, the date and the venue. Everything can change later.</p></div>
-            <div className="lp-step"><h3>Get the Wedding Pass</h3><p>One payment unlocks every tool through your wedding date plus 90 days.</p></div>
-            <div className="lp-step"><h3>Invite your people</h3><p>Send invites by email and pick what each person sees.</p></div>
+            <div className="lp-step"><h3>Activate for {PRICING.pass}</h3><p>One payment for the two of you unlocks every tool through your wedding date plus 90 days.</p></div>
+            <div className="lp-step"><h3>Invite your people</h3><p>Parents and planners for {PRICING.full}, wedding party for {PRICING.party}, each by email.</p></div>
           </div>
         </div>
       </section>
 
       <section className="lp-sec alt" id="pricing">
         <div className="lp-wrap">
-          <div className="lp-head"><h2>One price for the whole engagement</h2><p>No subscription to remember to cancel.</p></div>
+          <div className="lp-head"><h2>Simple, one-time pricing</h2><p>No subscription to remember to cancel. Pay once for the two of you, then add people as you need them.</p></div>
           <div className="lp-price">
             <div className="lp-plan">
-              <h3>Wedding Pass</h3>
-              <div className="amt">{PRICING.pass}<small>one time</small></div>
+              <h3>{PRICING.passName}</h3>
+              <div className="amt">{PRICING.pass}<small>one time, for the two of you</small></div>
               <ul>
                 <li>Tasks, vendors, budget, guests and files</li>
                 <li>Seating chart and wedding day timeline</li>
                 <li>Vision board and hashtag ideas</li>
-                <li>{PRICING.includedWithPass} people besides the two of you</li>
-                <li>Valid through your wedding date plus 90 days</li>
+                <li>Valid through your wedding date plus 90 days, then saved to look back on</li>
               </ul>
               <Link className="btn" to="/login">Start planning</Link>
             </div>
             <div className="lp-addon">
-              <h3>Need more helpers?</h3>
-              <div className="amt">{PRICING.seat} <small className="muted" style={{ fontSize: '.9rem', fontFamily: 'var(--sans)' }}>per person, one time</small></div>
-              <p>Add as many extra people as you like after the first {PRICING.includedWithPass}. Your partner never counts.</p>
+              <h3>Bring your people in</h3>
+              <div>
+                <div className="amt">{PRICING.full} <small className="muted" style={{ fontSize: '.9rem', fontFamily: 'var(--sans)' }}>per person</small></div>
+                <b>{PRICING.fullName}</b>
+                <p>Full access to planning, like the two of you. Hide any tab per person.</p>
+              </div>
+              <div>
+                <div className="amt">{PRICING.party} <small className="muted" style={{ fontSize: '.9rem', fontFamily: 'var(--sans)' }}>per person</small></div>
+                <b>{PRICING.partyName}</b>
+                <p>The wedding day schedule: party moments and anything you assign to them. Vendors use this too.</p>
+              </div>
               <div className="lp-faq">
-                <div><b>What happens after the wedding?</b><span>Everything stays saved and view-only, so you can look back any time.</span></div>
-                <div><b>Who counts as a person?</b><span>Anyone you invite besides your partner: your planner, family, wedding party or vendors.</span></div>
+                <div><b>Does my partner cost extra?</b><span>No. {PRICING.passName} covers both of you.</span></div>
               </div>
             </div>
           </div>

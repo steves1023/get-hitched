@@ -1,47 +1,53 @@
 -- Run with: supabase test db
+-- Two spot types: full (Parents and Planners) and party (Wedding Party). The couple never counts.
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path to public, extensions;
-select plan(11);
+select plan(13);
 
 insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000e1', 'couple@test.dev');
 insert into public.weddings (id, partner1, partner2) values
-  ('10000000-0000-0000-0000-0000000000e1', 'Emma', 'James'),
+  ('10000000-0000-0000-0000-0000000000e1', 'Unpaid', 'Couple'),
   ('10000000-0000-0000-0000-0000000000e2', 'Ana', 'Leo');
 insert into public.entitlements (wedding_id, plan, valid_until) values
   ('10000000-0000-0000-0000-0000000000e1', 'free', null),
   ('10000000-0000-0000-0000-0000000000e2', 'pass', current_date + 365);
 insert into public.wedding_members (wedding_id, user_id, role, display_name) values
-  ('10000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000000e1', 'owner', 'Emma'),
+  ('10000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000000e1', 'owner', 'Owner'),
   ('10000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-0000000000e1', 'owner', 'Ana');
 
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-0000000000e1","email":"couple@test.dev"}';
 
--- Unpaid wedding: nobody besides the partner
-select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','a@x.dev','A','family')$$,
-  'P0001', 'SEAT_LIMIT', 'unpaid: helpers blocked');
-select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','c@x.dev','C','wedding_party')$$,
-  'P0001', 'SEAT_LIMIT', 'unpaid: still blocked');
-select lives_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','p@x.dev','P','partner')$$,
-  'partner never counts against seats');
-select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','p2@x.dev','P2','partner')$$,
+select lives_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','p@x.dev','P','partner')$$,
+  'partner is free');
+select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','p2@x.dev','P2','partner')$$,
   'P0001', 'PARTNER_EXISTS', 'only one partner');
-select is(public.seat_limit('10000000-0000-0000-0000-0000000000e1'), 0, 'unpaid limit is 0');
+select is(public.seat_limit('10000000-0000-0000-0000-0000000000e2', 'full'), 0, 'the pass includes no full spots');
+select is(public.seat_limit('10000000-0000-0000-0000-0000000000e2', 'party'), 0, 'the pass includes no party spots');
+select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','m@x.dev','Mom','family')$$,
+  'P0001', 'NO_FULL_SPOTS', 'a parent needs a Parents and Planners spot');
+select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','b@x.dev','Bea','wedding_party')$$,
+  'P0001', 'NO_PARTY_SPOTS', 'a bridesmaid needs a Wedding Party spot');
+select throws_ok($$select public.add_seats('10000000-0000-0000-0000-0000000000e2', 'full', 3)$$,
+  '42501', null, 'couples cannot grant themselves spots');
 
--- Pass wedding: 5 included
-select lives_ok($$insert into invites (wedding_id, email, display_name, role)
-  select '10000000-0000-0000-0000-0000000000e2', 'g' || i || '@x.dev', 'G' || i, 'wedding_party' from generate_series(1,5) i$$,
-  'pass: 5 people included');
-select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','g6@x.dev','G6','family')$$,
-  'P0001', 'SEAT_LIMIT', 'pass: 6th person blocked until seats are bought');
-select throws_ok($$select public.add_extra_seats('10000000-0000-0000-0000-0000000000e2', 3)$$,
-  '42501', null, 'couples cannot grant themselves seats');
-
--- Webhook (service role) adds 3 seats
+-- Webhook (service role) records purchases
 reset role;
-select is(public.add_extra_seats('10000000-0000-0000-0000-0000000000e2', 3), 3, 'webhook adds purchased seats');
-select is(public.seat_limit('10000000-0000-0000-0000-0000000000e2'), 8, 'pass limit becomes 5 + 3');
+select is(public.add_seats('10000000-0000-0000-0000-0000000000e2', 'full', 2), 2, '2 Parents and Planners spots bought');
+select is(public.add_seats('10000000-0000-0000-0000-0000000000e2', 'party', 1), 1, '1 Wedding Party spot bought');
+set local role authenticated;
+
+select lives_ok($$insert into invites (wedding_id, email, display_name, role) values
+  ('10000000-0000-0000-0000-0000000000e2','m@x.dev','Mom','family'),
+  ('10000000-0000-0000-0000-0000000000e2','pl@x.dev','Pat','planner')$$, 'two full spots used');
+select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','d@x.dev','Dad','family')$$,
+  'P0001', 'NO_FULL_SPOTS', 'a third full person is blocked');
+insert into invites (wedding_id, email, display_name, role, access)
+values ('10000000-0000-0000-0000-0000000000e2','b@x.dev','Bea','wedding_party','{"budget":"edit","day":"edit"}');
+select is((select access from invites where email = 'b@x.dev'), '{"day":"assigned"}'::jsonb,
+  'a wedding party invite is always reduced to their part of the Wedding Day tab');
+reset role;
 select is(public.record_stripe_event('evt_1') and not public.record_stripe_event('evt_1'), true, 'duplicate Stripe events are ignored');
 
 select * from finish();

@@ -29,7 +29,7 @@ select is((select count(*)::int from public.tasks where wedding_id = '10000000-0
 select throws_ok($$insert into public.tasks (wedding_id, title) values ('10000000-0000-0000-0000-0000000000f1', 'x')$$,
   '42501', null, 'unpaid: cannot add anything');
 select throws_ok($$insert into public.invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000f1','b@x.dev','B','wedding_party')$$,
-  'P0001', 'SEAT_LIMIT', 'unpaid: cannot invite helpers');
+  'P0001', 'NO_PARTY_SPOTS', 'unpaid: cannot invite helpers');
 select lives_ok($$insert into public.invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000f1','p@x.dev','P','partner')$$,
   'unpaid: can still invite their partner');
 select is(public.my_access('10000000-0000-0000-0000-0000000000f2', 'tasks'), 'read', 'expired: edit becomes read');

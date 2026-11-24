@@ -44,15 +44,24 @@ export interface Invite {
 }
 export interface Entitlement {
   wedding_id: string; plan: 'free' | 'pass' | 'monthly'; valid_until: string | null;
-  stripe_customer_id: string | null; extra_seats: number;
+  stripe_customer_id: string | null; full_seats: number; party_seats: number;
 }
 
 /** Display prices. Stripe charges whatever the price IDs say, so keep these in step with Stripe. */
-export const PRICING = { pass: '$29.99', seat: '$1.99', seatCents: 199, includedWithPass: 5 } as const;
+export const PRICING = {
+  pass: '$29.99', passName: 'Bride and Groom',
+  full: '$3.99', fullCents: 399, fullName: 'Parents and Planners',
+  party: '$1.99', partyCents: 199, partyName: 'Wedding Party',
+} as const;
 
-/** People besides the couple this wedding may have. Mirrors public.seat_limit(). */
-export const seatLimit = (hasPass: boolean, extraSeats: number) =>
-  hasPass ? PRICING.includedWithPass + extraSeats : 0;
+export type SeatType = 'full' | 'party';
+/** Which paid spot a role uses. The couple (owner, partner) uses none. Mirrors public.seat_type(). */
+export const seatTypeOf = (r: Role): SeatType | null =>
+  r === 'planner' || r === 'family' ? 'full' : r === 'wedding_party' || r === 'vendor' ? 'party' : null;
+
+/** Spots of one type this wedding may fill. Mirrors public.seat_limit(). */
+export const seatLimit = (hasPass: boolean, ent: Entitlement | null, t: SeatType) =>
+  !hasPass || !ent ? 0 : t === 'full' ? ent.full_seats : ent.party_seats;
 export interface Summary {
   wedding_id: string; total_budget: number; tasks_total: number; tasks_done: number;
   guests_total: number; rsvp_yes: number; rsvp_pending: number; spent: number;
@@ -68,12 +77,13 @@ export const MODULE_LABEL: Record<Module, string> = {
 };
 
 /** Defaults the couple can override per person when inviting. */
+const ALL_EDIT: Record<Module, Level> = { tasks: 'edit', vendors: 'edit', budget: 'edit', guests: 'edit', seating: 'edit', day: 'edit', vision: 'edit', files: 'edit', hashtags: 'edit' };
+const DAY_ONLY: Record<Module, Level> = { tasks: 'none', vendors: 'none', budget: 'none', guests: 'none', seating: 'none', day: 'assigned', vision: 'none', files: 'none', hashtags: 'none' };
+
+/** Defaults when inviting. Parents and Planners start with everything (the couple can hide tabs);
+ *  Wedding Party is fixed to their part of the Wedding Day tab. */
 export const ROLE_PRESETS: Record<Exclude<Role, 'owner'>, Record<Module, Level>> = {
-  partner:       { tasks: 'edit', vendors: 'edit', budget: 'edit', guests: 'edit', seating: 'edit', day: 'edit', vision: 'edit', files: 'edit', hashtags: 'edit' },
-  planner:       { tasks: 'edit', vendors: 'edit', budget: 'read', guests: 'edit', seating: 'edit', day: 'edit', vision: 'read', files: 'edit', hashtags: 'none' },
-  family:        { tasks: 'assigned', vendors: 'none', budget: 'none', guests: 'read', seating: 'read', day: 'read', vision: 'read', files: 'none', hashtags: 'read' },
-  wedding_party: { tasks: 'assigned', vendors: 'none', budget: 'none', guests: 'none', seating: 'none', day: 'assigned', vision: 'read', files: 'none', hashtags: 'read' },
-  vendor:        { tasks: 'none', vendors: 'none', budget: 'none', guests: 'none', seating: 'none', day: 'assigned', vision: 'none', files: 'none', hashtags: 'none' },
+  partner: ALL_EDIT, planner: ALL_EDIT, family: ALL_EDIT, wedding_party: DAY_ONLY, vendor: DAY_ONLY,
 };
 
 export const TASK_CATEGORIES = ['Venue', 'Catering', 'Photography', 'Flowers', 'Attire', 'Invitations', 'Music', 'Transport', 'Other'];

@@ -1,5 +1,5 @@
 // Stripe calls this; deploy with --no-verify-jwt. Signature verification is the auth.
-// Handles: Wedding Pass purchases and extra-people purchases (checkout.session.completed).
+// Handles: Bride and Groom purchases and spot purchases for Parents and Planners or Wedding Party.
 import Stripe from 'npm:stripe@17.7.0';
 import { adminClient } from '../_shared/clients.ts';
 
@@ -37,16 +37,18 @@ Deno.serve(async (req) => {
   try {
     const customerId = typeof s.customer === 'string' ? s.customer : s.customer?.id ?? null;
 
-    if (s.metadata?.kind === 'seats') {
+    const kind = s.metadata?.kind;
+    if (kind === 'full_seats' || kind === 'party_seats' || kind === 'seats') {
       const items = await stripe.checkout.sessions.listLineItems(s.id, { limit: 10 });
       const qty = items.data.reduce((n, li) => n + (li.quantity ?? 0), 0);
-      const { error } = await admin.rpc('add_extra_seats', { p_wedding: weddingId, p_qty: qty });
+      const type = kind === 'party_seats' ? 'party' : 'full';
+      const { error } = await admin.rpc('add_seats', { p_wedding: weddingId, p_type: type, p_qty: qty });
       if (error) throw error;
     } else {
       const { data: w } = await admin.from('weddings').select('wedding_date').eq('id', weddingId).single();
       const base = w?.wedding_date ? new Date(w.wedding_date) : new Date(Date.now() + 365 * 86_400_000);
       const validUntil = new Date(base.getTime() + 90 * 86_400_000).toISOString().slice(0, 10);
-      // Upsert touches only these columns, so any extra_seats already bought are kept.
+      // Upsert touches only these columns, so any spots already bought are kept.
       const { error } = await admin.from('entitlements').upsert({ wedding_id: weddingId, plan: 'pass', valid_until: validUntil });
       if (error) throw error;
     }

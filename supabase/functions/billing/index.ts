@@ -1,5 +1,6 @@
-// POST { action: 'pass', wedding_id }            -> { url }  Wedding Pass checkout ($29.99, includes 5 people)
-// POST { action: 'seats', wedding_id, qty? }     -> { url }  Extra people ($1.99 each, quantity adjustable at checkout)
+// POST { action: 'pass', wedding_id }                        -> { url }  Bride and Groom ($29.99, the couple)
+// POST { action: 'seats', wedding_id, seat_type, qty? }      -> { url }  seat_type 'full' = Parents and Planners ($3.99 each),
+//                                                                        'party' = Wedding Party ($1.99 each); quantity adjustable
 // POST { action: 'portal', wedding_id }          -> { url }  Stripe customer portal (receipts)
 import Stripe from 'npm:stripe@17.7.0';
 import { corsHeaders, json } from '../_shared/cors.ts';
@@ -15,7 +16,7 @@ Deno.serve(async (req) => {
   const auth = await requireUser(req);
   if (!auth) return json({ error: 'NOT_SIGNED_IN' }, 401);
 
-  const { action, wedding_id, qty } = await req.json().catch(() => ({}));
+  const { action, wedding_id, qty, seat_type } = await req.json().catch(() => ({}));
   if (!wedding_id) return json({ error: 'BAD_REQUEST' }, 400);
 
   const { data: isCouple } = await auth.supa.rpc('is_couple', { w: wedding_id });
@@ -59,7 +60,8 @@ Deno.serve(async (req) => {
 
   if (action === 'seats') {
     if (!hasPass) return json({ error: 'PASS_REQUIRED' }, 400);
-    const price = Deno.env.get('STRIPE_PRICE_SEAT');
+    if (seat_type !== 'full' && seat_type !== 'party') return json({ error: 'BAD_REQUEST' }, 400);
+    const price = Deno.env.get(seat_type === 'full' ? 'STRIPE_PRICE_FULL' : 'STRIPE_PRICE_PARTY');
     if (!price) return json({ error: 'PRICE_NOT_CONFIGURED' }, 500);
     const start = Math.max(1, Math.min(100, Number(qty) || 1));
     const session = await stripe.checkout.sessions.create({
@@ -68,7 +70,7 @@ Deno.serve(async (req) => {
       ...customer,
       invoice_creation: { enabled: true },
       client_reference_id: wedding_id,
-      metadata: { wedding_id, kind: 'seats' },
+      metadata: { wedding_id, kind: seat_type === 'full' ? 'full_seats' : 'party_seats' },
       success_url: `${back}?status=seats`,
       cancel_url: `${back}?status=cancelled`,
     });
