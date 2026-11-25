@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { friendly } from '../lib/errors';
 import { initials } from '../lib/format';
 import type { Guest, SeatingTable } from '../lib/types';
-import { Badge, Empty, ErrorNote, Filters, Loading, PageHeader, Stat } from '../components/ui';
+import { Badge, Empty, ErrorNote, Filters, Loading, Modal, PageHeader, Stat } from '../components/ui';
 import GuestEditor from './guests/GuestEditor';
 
 type Rsvp = 'all' | Guest['rsvp'];
@@ -34,7 +34,8 @@ export default function Guests() {
   const [seat, setSeat] = useState<'all' | 'seated' | 'unseated'>('all');
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'name', dir: 1 });
   const [open, setOpen] = useState<Set<string>>(new Set());
-  const [editing, setEditing] = useState<{ guest: Partial<Guest>; isNew: boolean; head: Guest | null } | null>(null);
+  const [editing, setEditing] = useState<{ guest: Partial<Guest>; isNew: boolean; head: Guest | null; mode?: 'single' | 'family' } | null>(null);
+  const [choosing, setChoosing] = useState(false);
   const [importMsg, setImportMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -146,7 +147,7 @@ export default function Guests() {
       <PageHeader title="Guest list" sub="RSVPs, families & addresses" action={canEdit && (
         <span style={{ display: 'flex', gap: 6 }}>
           <button className="btn g" onClick={() => fileRef.current?.click()}>Import CSV</button>
-          <button className="btn" onClick={() => setEditing({ guest: { side: 'both', rsvp: 'pending', party_size: 1 }, isNew: true, head: null })}>+ Add guest</button>
+          <button className="btn" onClick={() => setChoosing(true)}>+ Add guest</button>
           <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) importCsv(f); e.target.value = ''; }} />
         </span>
       )} />
@@ -268,8 +269,19 @@ export default function Guests() {
         </div>
       ))}
 
+      <Modal open={choosing} title="Who are you adding?" onClose={() => setChoosing(false)}>
+        <div className="g2">
+          {([['single', 'One guest', 'A single person. You can add a +1.'], ['family', 'A family or household', 'Several people at one address, like a couple or parents with kids.']] as const).map(([mode, title, hint]) => (
+            <button key={mode} type="button" className="vibe" style={{ padding: '22px 16px', textAlign: 'left' }} autoFocus={mode === 'single'}
+              onClick={() => { setChoosing(false); setEditing({ guest: { side: 'both', rsvp: 'pending', party_size: 1 }, isNew: true, head: null, mode }); }}>
+              <b style={{ fontSize: '1.1rem', marginBottom: 4 }}>{title}</b><small>{hint}</small>
+            </button>
+          ))}
+        </div>
+      </Modal>
+
       {editing && (
-        <GuestEditor guest={editing.guest} isNew={editing.isNew} head={editing.head} wedding={wedding}
+        <GuestEditor guest={editing.guest} isNew={editing.isNew} mode={editing.mode} head={editing.head} wedding={wedding}
           members={editing.isNew || editing.head ? [] : all.filter((g) => g.primary_guest_id === editing.guest.id)}
           standalone={editing.head ? [] : all.filter((g) => g.id !== editing.guest.id && !g.primary_guest_id && !all.some((x) => x.primary_guest_id === g.id))}
           onClose={() => setEditing(null)} onSaved={() => { m.refresh(); qc.invalidateQueries({ queryKey: ['summary', wedding.id] }); }} />

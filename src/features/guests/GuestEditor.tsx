@@ -5,11 +5,11 @@ import type { Guest, Wedding } from '../../lib/types';
 import { Drawer } from '../../components/ui';
 import AddressInput, { type Address } from './AddressInput';
 
-type Member = { id?: string; name: string; rsvp: Guest['rsvp']; dietary: string; remove?: boolean };
+type Member = { id?: string; name: string; rsvp: Guest['rsvp']; dietary: string; plusOne: boolean; remove?: boolean };
 const EMPTY_ADDR: Address = { address1: '', address2: '', city: '', state: '', postal_code: '', country: '' };
 
-export default function GuestEditor({ guest, isNew, head, members, standalone, wedding, onClose, onSaved }: {
-  guest: Partial<Guest>; isNew: boolean;
+export default function GuestEditor({ guest, isNew, mode = 'single', head, members, standalone, wedding, onClose, onSaved }: {
+  guest: Partial<Guest>; isNew: boolean; mode?: 'single' | 'family';
   head: Guest | null;            // set when editing a family member
   members: Guest[];              // existing family members when editing a main guest
   standalone: Guest[];           // guests who could be moved into this family
@@ -24,7 +24,12 @@ export default function GuestEditor({ guest, isNew, head, members, standalone, w
     address1: guest.address1 ?? '', address2: guest.address2 ?? '', city: guest.city ?? '', state: guest.state ?? '',
     postal_code: guest.postal_code ?? '', country: guest.country ?? '',
   });
-  const [fam, setFam] = useState<Member[]>(members.map((m) => ({ id: m.id, name: m.name, rsvp: m.rsvp, dietary: m.dietary ?? '' })));
+  const [fam, setFam] = useState<Member[]>(() => {
+    const existing = members.map((m) => ({ id: m.id, name: m.name, rsvp: m.rsvp, dietary: m.dietary ?? '', plusOne: m.party_size > 1 }));
+    return isNew && mode === 'family' && !head ? [{ name: '', rsvp: 'pending', dietary: '', plusOne: false }] : existing;
+  });
+  const [showFamily, setShowFamily] = useState(!isNew || mode === 'family' || members.length > 0);
+  const manyPlusOnes = (guest.party_size ?? 1) > 2;   // older imports with 2+ unnamed guests keep the number field
   const [moveIn, setMoveIn] = useState('');
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
   const set = (p: Partial<typeof v>) => setV((x) => ({ ...x, ...p }));
@@ -53,10 +58,10 @@ export default function GuestEditor({ guest, isNew, head, members, standalone, w
         for (const m of fam) {
           if (m.remove && m.id) { const { error } = await supabase.from('guests').delete().eq('id', m.id); if (error) throw error; continue; }
           if (m.remove || !m.name.trim()) continue;
-          const mrow = { name: m.name.trim(), rsvp: m.rsvp, dietary: nil(m.dietary) };
+          const mrow = { name: m.name.trim(), rsvp: m.rsvp, dietary: nil(m.dietary), party_size: m.plusOne ? 2 : 1 };
           const { error } = m.id
             ? await supabase.from('guests').update(mrow).eq('id', m.id)
-            : await supabase.from('guests').insert({ ...mrow, wedding_id: wedding.id, side: row.side, primary_guest_id: id, party_size: 1 });
+            : await supabase.from('guests').insert({ ...mrow, wedding_id: wedding.id, side: row.side, primary_guest_id: id });
           if (error) throw error;
         }
         if (moveIn) {
@@ -82,7 +87,7 @@ export default function GuestEditor({ guest, isNew, head, members, standalone, w
 
   const sideOpts = [['partner1', `${wedding.partner1}’s side`], ['partner2', `${wedding.partner2}’s side`], ['both', 'Both']];
   return (
-    <Drawer open title={isNew ? (isMember ? `Add to ${head!.name}’s family` : 'Add guest') : `Edit ${guest.name}`} onClose={onClose} footer={
+    <Drawer open title={isNew ? (isMember ? `Add to ${head!.name}’s family` : mode === 'family' ? 'Add a family' : 'Add a guest') : `Edit ${guest.name}`} onClose={onClose} footer={
       <>
         {!isNew ? <button className="btn danger" disabled={busy} onClick={del}>Delete</button> : <span />}
         <button className="btn" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
@@ -94,7 +99,10 @@ export default function GuestEditor({ guest, isNew, head, members, standalone, w
           {!isNew && <button className="btn g sm" style={{ marginTop: 8 }} onClick={separate}>Make a separate guest</button>}
         </div>
       )}
-      <label className="field"><span>Name *</span><input value={v.name} onChange={(e) => set({ name: e.target.value })} /></label>
+      <label className="field"><span>{!isMember && (mode === 'family' || fam.some((f) => !f.remove)) ? 'Main contact *' : 'Name *'}</span>
+        <input value={v.name} autoFocus={isNew} onChange={(e) => set({ name: e.target.value })} placeholder={mode === 'family' && isNew ? 'Sarah Miller' : ''} />
+      </label>
+      {!isMember && mode === 'family' && isNew && <p className="small muted" style={{ marginTop: -6, marginBottom: 10 }}>The person invitations and mail go to. Add everyone else in the household below.</p>}
       <div className="g2">
         {!isMember && <label className="field"><span>Side</span>
           <select value={v.side} onChange={(e) => set({ side: e.target.value as Guest['side'] })}>{sideOpts.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>
@@ -104,10 +112,16 @@ export default function GuestEditor({ guest, isNew, head, members, standalone, w
             <option value="pending">Pending</option><option value="yes">Yes</option><option value="no">No</option>
           </select>
         </label>
-        <label className="field"><span>Party size</span><input type="number" min={1} max={20} value={v.party_size} onChange={(e) => set({ party_size: Number(e.target.value) })} /></label>
         <label className="field"><span>Dietary needs</span><input value={v.dietary} onChange={(e) => set({ dietary: e.target.value })} /></label>
+        {manyPlusOnes ? (
+          <label className="field"><span>Party size</span><input type="number" min={1} max={20} value={v.party_size} onChange={(e) => set({ party_size: Number(e.target.value) })} /></label>
+        ) : (
+          <label className="field" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 18 }}>
+            <input type="checkbox" style={{ width: 'auto' }} checked={v.party_size > 1} onChange={(e) => set({ party_size: e.target.checked ? 2 : 1 })} />
+            <span style={{ margin: 0, textTransform: 'none', letterSpacing: 0, fontSize: '.86rem', color: 'var(--ink)', fontWeight: 500 }}>Bringing a +1</span>
+          </label>
+        )}
       </div>
-      <p className="small muted" style={{ marginTop: -6, marginBottom: 10 }}>Party size counts unnamed plus-ones. Family members you name below are counted separately.</p>
       <label className="field"><span>Email</span><input type="email" value={v.email} onChange={(e) => set({ email: e.target.value })} /></label>
 
       {!isMember && (
@@ -126,10 +140,16 @@ export default function GuestEditor({ guest, isNew, head, members, standalone, w
         </fieldset>
       )}
 
-      {!isMember && (
+      {!isMember && !showFamily && (
+        <p className="small" style={{ marginBottom: 12 }}>
+          Lives with someone you’re inviting?{' '}
+          <button type="button" className="btn g sm" onClick={() => { setShowFamily(true); setFam([{ name: '', rsvp: v.rsvp as Guest['rsvp'], dietary: '', plusOne: false }]); }}>+ Add family member</button>
+        </p>
+      )}
+      {!isMember && showFamily && (
         <fieldset style={{ border: 'none', marginBottom: 6 }}>
           <legend className="ct" style={{ fontSize: '1rem', marginBottom: 4 }}>Family members</legend>
-          <p className="small muted" style={{ marginBottom: 8 }}>People who live with {v.name || 'this guest'} share the address above.</p>
+          <p className="small muted" style={{ marginBottom: 8 }}>People who live with {v.name || 'this guest'} share the address above. Tap <b>+1</b> if someone is bringing a guest.</p>
           {fam.map((m, i) => (
             <div key={m.id ?? `new${i}`} className="row" style={{ alignItems: 'center', gap: 6, padding: 8, opacity: m.remove ? 0.45 : 1 }}>
               <input className="input" style={{ flex: 2, padding: '6px 9px' }} placeholder="Name" value={m.name} disabled={m.remove}
@@ -140,13 +160,16 @@ export default function GuestEditor({ guest, isNew, head, members, standalone, w
               </select>
               <input className="input" style={{ flex: 1, padding: '6px 9px' }} placeholder="Dietary" value={m.dietary} disabled={m.remove}
                 onChange={(e) => setFam((f) => f.map((x, j) => (j === i ? { ...x, dietary: e.target.value } : x)))} />
+              <button type="button" className={`f${m.plusOne ? ' on' : ''}`} disabled={m.remove} aria-pressed={m.plusOne} title="Bringing a +1"
+                style={{ padding: '4px 9px', fontSize: '.72rem' }}
+                onClick={() => setFam((f) => f.map((x, j) => (j === i ? { ...x, plusOne: !x.plusOne } : x)))}>+1</button>
               <button type="button" className="x-btn" aria-label={m.remove ? `Keep ${m.name}` : `Remove ${m.name || 'member'}`}
                 onClick={() => setFam((f) => (m.id ? f.map((x, j) => (j === i ? { ...x, remove: !x.remove } : x)) : f.filter((_, j) => j !== i)))}>
                 {m.remove ? '↺' : '×'}
               </button>
             </div>
           ))}
-          <button type="button" className="btn g sm" onClick={() => setFam((f) => [...f, { name: '', rsvp: v.rsvp as Guest['rsvp'], dietary: '' }])}>+ Add family member</button>
+          <button type="button" className="btn g sm" onClick={() => setFam((f) => [...f, { name: '', rsvp: v.rsvp as Guest['rsvp'], dietary: '', plusOne: false }])}>+ Add family member</button>
           {standalone.length > 0 && (
             <label className="field" style={{ marginTop: 10 }}><span>Or move someone already on the list into this family</span>
               <select value={moveIn} onChange={(e) => setMoveIn(e.target.value)}>
