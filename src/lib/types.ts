@@ -26,9 +26,14 @@ export interface Expense {
 }
 export interface Guest {
   id: string; wedding_id: string; name: string; side: 'partner1' | 'partner2' | 'both'; rsvp: 'pending' | 'yes' | 'no';
-  party_size: number; dietary: string | null; email: string | null; table_id: string | null;
+  party_size: number; dietary: string | null; email: string | null; table_id: string | null; seat_index: number | null;
 }
-export interface SeatingTable { id: string; wedding_id: string; label: string; shape: 'round' | 'rect'; capacity: number; x: number; y: number }
+export interface SeatingTable {
+  id: string; wedding_id: string; label: string; shape: 'round' | 'rect'; capacity: number; x: number; y: number;
+  kind: 'round60' | 'round72' | 'rect6' | 'rect8' | 'sweetheart'; rotation: 0 | 90;
+}
+export interface RoomItem { id: string; wedding_id: string; kind: 'dance_floor' | 'dj' | 'bar' | 'stage' | 'entrance' | 'cake' | 'buffet'; label: string | null; x: number; y: number; w: number; h: number }
+export interface SeatingLayout { wedding_id: string; room_name: string | null; width_ft: number; length_ft: number; venue_url: string | null }
 export interface DayItem {
   id: string; wedding_id: string; start_time: string; title: string; who: string | null; location: string | null;
   duration_min: number | null; phase: 'morning_prep' | 'getting_ready' | 'ceremony' | 'reception';
