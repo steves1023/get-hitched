@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { PRICING } from '../lib/types';
+import '@fontsource/great-vibes/400.css';
+import { seatOffsets } from '../features/seating/geometry';
 import './landing.css';
 
 /** Public home page for signed-out visitors. Every visual is the real app UI with sample data. */
@@ -21,8 +23,8 @@ export default function Landing() {
           <div>
             <h1>Plan your wedding together, in one place.</h1>
             <p className="lede">
-              Tasks, budget, guests, seating and an hour-by-hour plan for the day. Then share just the right parts
-              with your planner, your family and your wedding party.
+              Guests, budget, seating, gifts and an hour-by-hour plan for the day, plus printables that match your
+              style. Then share just the right parts with your planner, your family and your wedding party.
             </p>
             <div className="lp-cta">
               <Link className="btn" to="/login">Start planning</Link>
@@ -55,12 +57,10 @@ export default function Landing() {
               <div className="bar"><i style={{ width: '38%' }} /></div>
               <small className="muted">38% of budget used</small>
             </Tile>
-            <Tile title="Guest list" text="RSVPs, party sizes and dietary notes. Import from a spreadsheet.">
-              <GuestRow initials="SM" name="Sarah Miller" tags={[['Yes ✓', 'bs'], ['Party of 2', 'bg']]} />
-              <GuestRow initials="TC" name="Tom Carlson" tags={[['Yes ✓', 'bs'], ['Vegetarian', 'bw']]} />
-              <GuestRow initials="RP" name="Rita Patel" tags={[['Pending', 'bw']]} />
+            <Tile title="Guest list" text="Families share one address, everyone keeps their own RSVP. Search, filter, or import a spreadsheet.">
+              <MiniSheet />
             </Tile>
-            <Tile title="Seating chart" text="Drag tables into place and seat guests with a tap. Colors show which tables are full." wide>
+            <Tile title="Seating chart" text="Your room to scale, walls and all. Real table sizes, and a + on every chair to seat someone. Pull the room size from your venue’s website." wide>
               <SeatingMini />
             </Tile>
             <Tile title="Vendors" text="Contacts, contracts and what you’ve paid, all on one card.">
@@ -75,6 +75,19 @@ export default function Landing() {
               <div className="tl"><span className="tm">8:00 AM</span><div><b>Hair stylist arrives</b><div className="small muted">Bride’s suite · 30 min</div></div></div>
               <div className="tl"><span className="tm">1:30 PM</span><div><b>First look photos</b><div className="small muted">Both partners + photographer</div></div></div>
               <div className="tl"><span className="tm">3:45 PM</span><div><b>Ceremony</b><div className="small muted">Garden pavilion · everyone</div></div></div>
+            </Tile>
+            <Tile title="Gifts & thank-yous" text="Log who gave what, even when it’s a couple. Then draft each thank-you note in one tap.">
+              <div className="row" style={{ alignItems: 'center' }}>
+                <div style={{ flex: 1 }}><div className="nm">Honeymoon fund</div><div className="small muted">From Sarah &amp; Tom Miller</div></div>
+                <span className="badge bg">Drafted</span>
+              </div>
+              <div className="lp-note">
+                Dear Sarah and Tom, thank you for your generous gift toward our honeymoon. We’re putting it toward a cooking class in Florence…
+              </div>
+              <span className="small" style={{ color: 'var(--blush-d)', fontWeight: 600 }}>✨ Write it for me</span>
+            </Tile>
+            <Tile title="Print & PDFs" text="Your schedule, table cards, place cards and thank-you notes, designed once to match your theme. Download and print." wide>
+              <PrintMini />
             </Tile>
             <Tile title="Vision board" text="Collect the looks you love, sorted by flowers, decor, attire and more.">
               <div className="lp-swatches">
@@ -228,14 +241,6 @@ function TaskRow({ name, tags, done }: { name: string; tags: [string, string][];
   );
 }
 
-function GuestRow({ initials, name, tags }: { initials: string; name: string; tags: [string, string][] }) {
-  return (
-    <div className="row" style={{ alignItems: 'center' }}>
-      <span className="av" style={{ width: 28, height: 28, fontSize: '.72rem' }}>{initials}</span>
-      <div><div className="nm">{name}</div><div className="chips">{tags.map(([t, c]) => <span key={t} className={`badge ${c}`}>{t}</span>)}</div></div>
-    </div>
-  );
-}
 
 function FileRow({ icon, name, size }: { icon: string; name: string; size: string }) {
   return (
@@ -264,34 +269,104 @@ function Person({ initials, name, role, rows }: { initials: string; name: string
 }
 
 function SeatingMini() {
-  const full = { f: '#EAF0EA', s: '#7A9E7E', t: '#4D7050' };
-  const part = { f: '#F8F2E4', s: '#C9A84C', t: '#8B6F2E' };
-  const empty = { f: '#FBEAE8', s: '#C8736A', t: '#8B4F48' };
-  const tables: { x: number; y: number; label: string; n: string; c: typeof full }[] = [
-    { x: 110, y: 120, label: 'Table 1', n: '8/8', c: full },
-    { x: 280, y: 120, label: 'Table 2', n: '5/8', c: part },
-    { x: 450, y: 120, label: 'Table 3', n: '3/8', c: part },
-    { x: 620, y: 120, label: 'Table 4', n: '0/8', c: empty },
+  // A 52 x 30 ft room drawn in feet, like the real seating chart.
+  const W = 52, L = 30;
+  const tables: { x: number; y: number; label: string; who: (string | null)[] }[] = [
+    { x: 7, y: 8, label: 'Table 1', who: ['SM', '+1', 'TC', null, 'AL', null, null, 'CD'] },
+    { x: 20, y: 8, label: 'Table 2', who: ['RP', '+1', null, null, null, null, null, null] },
+    { x: 7, y: 22, label: 'Table 3', who: [null, null, null, null, null, null, null, null] },
+    { x: 20, y: 22, label: 'Table 4', who: ['JW', null, 'BO', '+1', null, null, null, null] },
+  ];
+  const offs = seatOffsets('round60', 8, 0);
+  return (
+    <svg viewBox={`-1.5 -1.5 ${W + 3} ${L + 3}`} style={{ width: '100%', height: 'auto', background: '#F8F4EE', borderRadius: 10 }} role="img" aria-label="Seating chart drawn to scale">
+      <rect x={0} y={0} width={W} height={L} fill="#FDFAF5" stroke="#6B5E4E" strokeWidth={0.3} />
+      {Array.from({ length: 10 }, (_, i) => (i + 1) * 5).map((x) => <line key={x} x1={x} x2={x} y1={0} y2={L} stroke="#EDE7DC" strokeWidth={0.06} />)}
+      {[5, 10, 15, 20, 25].map((y) => <line key={y} x1={0} x2={W} y1={y} y2={y} stroke="#EDE7DC" strokeWidth={0.06} />)}
+      <line x1={28} y1={0} x2={28} y2={10.5} stroke="#4A4036" strokeWidth={0.5} />
+      <line x1={28} y1={19.5} x2={28} y2={30} stroke="#4A4036" strokeWidth={0.5} />
+      <rect x={29.1} y={11} width={2.4} height={8} rx={0.3} fill="#F3EEE6" stroke="#A89880" strokeWidth={0.1} strokeDasharray="0.5 0.3" />
+      <text x={30.3} y={15} transform="rotate(-90 30.3 15)" textAnchor="middle" fontSize={0.85} fill="#6B5E4E" fontFamily="Inter" fontWeight={600}>Bar</text>
+      <rect x={35.5} y={10} width={13} height={13} fill="#EFE2C2" stroke="#C4A35A" strokeWidth={0.13} />
+      <text x={42} y={16.8} textAnchor="middle" fontSize={1.05} fill="#6B5E4E" fontFamily="Inter" fontWeight={600}>Dance floor</text>
+      <rect x={39} y={3.4} width={6} height={2.4} rx={0.3} fill="#FFFDF8" stroke="#7A9E7E" strokeWidth={0.12} />
+      <text x={42} y={4.95} textAnchor="middle" fontSize={0.7} fill="#3B3226" fontFamily="'Playfair Display', serif" fontWeight={700}>Sweetheart</text>
+      {[[40.2, 'E', '#F5D5CF'], [43.8, 'J', '#CFE0CE']].map(([x, t, f]) => (
+        <g key={String(t)}><circle cx={Number(x)} cy={1.9} r={0.75} fill={String(f)} stroke="#fff" strokeWidth={0.1} />
+          <text x={Number(x)} y={2.12} textAnchor="middle" fontSize={0.6} fontWeight={700} fill="#3B3226" fontFamily="Inter">{t}</text></g>
+      ))}
+      {tables.map((t) => {
+        const n = t.who.filter(Boolean).length;
+        const ring = n >= 8 ? '#7A9E7E' : n > 0 ? '#C9A84C' : '#C8736A';
+        return (
+          <g key={t.label}>
+            <circle cx={t.x} cy={t.y} r={2.5} fill="#FFFDF8" stroke={ring} strokeWidth={0.14} />
+            <text x={t.x} y={t.y + 0.25} textAnchor="middle" fontSize={0.75} fontWeight={700} fill="#3B3226" fontFamily="'Playfair Display', serif">{t.label}</text>
+            {offs.map((o, i) => {
+              const w = t.who[i]; const cx = t.x + o.x, cy = t.y + o.y;
+              return w ? (
+                <g key={i}><circle cx={cx} cy={cy} r={0.75} fill={i % 3 ? '#CFE0CE' : '#F5D5CF'} stroke="#fff" strokeWidth={0.1} />
+                  <text x={cx} y={cy + 0.21} textAnchor="middle" fontSize={0.52} fontWeight={700} fill="#3B3226" fontFamily="Inter">{w}</text></g>
+              ) : (
+                <g key={i}><circle cx={cx} cy={cy} r={0.75} fill="#fff" stroke="#C9B89A" strokeWidth={0.08} strokeDasharray="0.25 0.18" />
+                  <line x1={cx - 0.28} x2={cx + 0.28} y1={cy} y2={cy} stroke="#9E5E54" strokeWidth={0.12} />
+                  <line x1={cx} x2={cx} y1={cy - 0.28} y2={cy + 0.28} stroke="#9E5E54" strokeWidth={0.12} /></g>
+              );
+            })}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function MiniSheet() {
+  const rows: { name: string; fam?: string; rsvp: [string, string]; city: string; open?: boolean }[] = [
+    { name: 'Sarah Miller', fam: 'Family · 4', rsvp: ['Yes', 'bs'], city: 'Ann Arbor', open: true },
+    { name: 'Rita Patel', rsvp: ['Pending', 'bw'], city: 'Milwaukee' },
   ];
   return (
-    <svg viewBox="0 0 730 230" style={{ width: '100%', height: 'auto', background: '#F8F4EE', borderRadius: 10 }}>
-      <defs>
-        <pattern id="lp-grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" fill="none" stroke="#EDE7DC" /></pattern>
-      </defs>
-      <rect width="730" height="230" fill="url(#lp-grid)" />
-      <rect x="265" y="14" width="200" height="32" rx="8" fill="#FBF0EE" stroke="#9E5E54" strokeWidth="2" />
-      <text x="365" y="35" textAnchor="middle" fontFamily="Playfair Display,serif" fontSize="13" fontWeight="700" fill="#9E5E54">Sweetheart Table</text>
-      {tables.map((t) => (
-        <g key={t.label} fontFamily="Playfair Display,serif" textAnchor="middle">
-          <circle cx={t.x} cy={t.y} r="40" fill={t.c.f} stroke={t.c.s} strokeWidth="3" />
-          <text x={t.x} y={t.y} fontSize="13" fontWeight="700" fill={t.c.t}>{t.label}</text>
-          <text x={t.x} y={t.y + 16} fontSize="10" fontFamily="Inter" fill={t.c.s}>{t.n}</text>
-        </g>
+    <div className="lp-sheet">
+      <div className="lp-sheet-h"><span>Name</span><span>RSVP</span><span>City</span></div>
+      {rows.map((r) => (
+        <div key={r.name}>
+          <div className="lp-sheet-r">
+            <span><b>{r.name}</b>{r.fam && <span className="fam-badge">{r.fam}</span>}</span>
+            <span><span className={`badge ${r.rsvp[1]}`}>{r.rsvp[0]}</span></span>
+            <span className="muted">{r.city}</span>
+          </div>
+          {r.open && ['Tom Miller', 'Lily Miller', 'Max Miller'].map((m, i) => (
+            <div key={m} className="lp-sheet-r member"><span>{m}</span><span><span className={`badge ${i ? 'bw' : 'bs'}`}>{i ? 'Pending' : 'Yes'}</span></span><span className="muted">↳ shared</span></div>
+          ))}
+        </div>
       ))}
-      <rect x="160" y="178" width="240" height="40" rx="8" fill="#F8F2E4" stroke="#C9A84C" strokeWidth="3" />
-      <text x="280" y="203" textAnchor="middle" fontFamily="Playfair Display,serif" fontSize="13" fontWeight="700" fill="#8B6F2E">Family Banquet · 6/12</text>
-      <rect x="470" y="178" width="110" height="40" rx="8" fill="#FBEAE8" stroke="#C8736A" strokeWidth="3" />
-      <text x="525" y="203" textAnchor="middle" fontFamily="Playfair Display,serif" fontSize="13" fontWeight="700" fill="#8B4F48">Kids · 0/6</text>
-    </svg>
+    </div>
+  );
+}
+
+function PrintMini() {
+  return (
+    <div className="lp-print">
+      <div className="lp-paper" style={{ width: 96, height: 124, background: '#FDFAF5', border: '1px solid #E8D6CF' }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 10, textAlign: 'center', marginTop: 12 }}>Emma &amp; James</div>
+        <div style={{ color: '#9E5E54', textAlign: 'center', fontSize: 7 }}>✦</div>
+        {[0, 1, 2, 3, 4].map((i) => <div key={i} style={{ display: 'flex', gap: 4, margin: '4px 10px' }}><i style={{ width: 14, height: 3, background: '#E8A598' }} /><i style={{ flex: 1, height: 3, background: '#E5DED4' }} /></div>)}
+        <small>Schedule</small>
+      </div>
+      <div className="lp-paper" style={{ width: 80, height: 112, background: '#FFFFFF', border: '1px solid #D9C38A', outline: '1px solid #D9C38A', outlineOffset: -5 }}>
+        <div style={{ fontSize: 6, letterSpacing: 2, color: '#8B7B66', textAlign: 'center', marginTop: 24 }}>TABLE</div>
+        <div style={{ fontFamily: "'Great Vibes', cursive", fontSize: 44, color: '#B08D3C', textAlign: 'center', lineHeight: 1 }}>1</div>
+        <small>Table card</small>
+      </div>
+      <div className="lp-paper" style={{ width: 104, height: 60, background: '#F3E9DA', border: '1px solid #C9A87A', alignSelf: 'center' }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 10, textAlign: 'center', marginTop: 16 }}>Sarah Miller</div>
+        <div style={{ fontSize: 6, letterSpacing: 2, color: '#8A5A2B', textAlign: 'center', marginTop: 3, fontWeight: 700 }}>TABLE 1</div>
+        <small>Place card</small>
+      </div>
+      <div className="lp-paper" style={{ width: 104, height: 80, background: '#F7FAFC', border: '1px solid #9CC3D5', alignSelf: 'center' }}>
+        <div style={{ margin: '12px 10px 0', fontSize: 6.5, lineHeight: 1.5, color: '#14263A' }}>Dear Rita,<br />The serving bowl is already the centerpiece of our table…</div>
+        <small>Thank-you</small>
+      </div>
+    </div>
   );
 }
