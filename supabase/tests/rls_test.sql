@@ -15,6 +15,7 @@ insert into auth.users (id, email) values
 insert into public.weddings (id, partner1, partner2) values
   ('10000000-0000-0000-0000-00000000000a', 'Emma', 'James'),
   ('10000000-0000-0000-0000-00000000000b', 'Ana', 'Leo');
+delete from public.day_items;   -- start from an empty schedule; these tests count items exactly
 insert into public.entitlements (wedding_id, plan, valid_until) values
   ('10000000-0000-0000-0000-00000000000a', 'pass', current_date + 365),
   ('10000000-0000-0000-0000-00000000000b', 'free', null);

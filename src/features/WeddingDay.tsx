@@ -7,6 +7,7 @@ import { friendly } from '../lib/errors';
 import { pct, time12 } from '../lib/format';
 import { PHASES, type DayItem, type DayItemAssignee } from '../lib/types';
 import { Badge, Bar, Empty, ErrorNote, Filters, FormDrawer, Loading, Locked, PageHeader, type FieldDef } from '../components/ui';
+import ShiftTimes from './day/ShiftTimes';
 
 const AUDIENCE = { everyone: 'Everyone', wedding_party: 'Wedding party', couple_only: 'Couple only' } as const;
 
@@ -21,6 +22,7 @@ export default function WeddingDay() {
   useRealtime('day_items', wedding.id);
   const [phase, setPhase] = useState<'all' | DayItem['phase']>('all');
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
+  const [shifting, setShifting] = useState(false);
   const [error, setError] = useState('');
 
   const all = items.data ?? [];
@@ -54,7 +56,14 @@ export default function WeddingDay() {
   return (
     <>
       <PageHeader title={levels.day === 'assigned' ? 'Day of' : 'Wedding day'} sub="Hour-by-hour timeline for the big day"
-        action={canEdit && <button className="btn" onClick={() => setEditing({ phase: 'ceremony', audience: 'everyone', assignees: [] })}>+ Add item</button>} />
+        action={canEdit && (
+          <span style={{ display: 'flex', gap: 6 }}>
+            {(items.data?.length ?? 0) > 0 && <button className="btn g" onClick={() => setShifting(true)}>Shift times</button>}
+            <button className="btn" onClick={() => setEditing({ phase: 'ceremony', audience: 'everyone', assignees: [] })}>+ Add item</button>
+          </span>
+        )} />
+      {canEdit && <ShiftTimes open={shifting} weddingId={wedding.id} items={items.data ?? []} onClose={() => setShifting(false)}
+        onDone={() => qc.invalidateQueries({ queryKey: ['day_items', wedding.id] })} />}
       {all.length > 0 && (
         <div className="card" style={{ padding: '16px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.85rem' }}>

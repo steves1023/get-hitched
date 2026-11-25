@@ -6,6 +6,7 @@ select plan(14);
 
 insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000a5', 'couple@test.dev');
 insert into public.weddings (id, partner1, partner2, wedding_date) values ('10000000-0000-0000-0000-0000000000a5', 'Emma', 'James', '2027-06-20');
+delete from public.day_items where wedding_id = '10000000-0000-0000-0000-0000000000a5';   -- start from an empty schedule
 insert into public.entitlements (wedding_id, plan, valid_until) values ('10000000-0000-0000-0000-0000000000a5', 'pass', current_date + 100);
 insert into public.wedding_members (wedding_id, user_id, role, display_name) values
   ('10000000-0000-0000-0000-0000000000a5', '00000000-0000-0000-0000-0000000000a5', 'owner', 'Emma');
