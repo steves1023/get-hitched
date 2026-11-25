@@ -26,7 +26,12 @@ Deno.serve(withErrors(async (req) => {
       headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key },
       body: JSON.stringify({ input: text, sessionToken, includedPrimaryTypes: ['street_address', 'premise', 'subpremise'] }),
     });
-    if (!res.ok) { console.error('Places autocomplete', res.status, await res.text()); return json({ error: 'ADDRESS_LOOKUP_FAILED' }, 502); }
+    if (!res.ok) {
+      const detail = await res.text();
+      console.error('Places autocomplete', res.status, detail);
+      const status = (() => { try { return JSON.parse(detail).error?.status as string | undefined; } catch { return undefined; } })();
+      return json({ error: status ? `GOOGLE_${status}` : 'ADDRESS_LOOKUP_FAILED' }, 502);
+    }
     const data = await res.json();
     const suggestions = (data.suggestions ?? [])
       .map((s: { placePrediction?: { placeId: string; text?: { text: string }; structuredFormat?: { mainText?: { text: string }; secondaryText?: { text: string } } } }) => s.placePrediction)

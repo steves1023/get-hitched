@@ -13,6 +13,7 @@ export default function AddressInput({ weddingId, value, onChange, onPick }: {
   const [items, setItems] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
+  const [note, setNote] = useState('');
   const session = useRef<string>(crypto.randomUUID());
   const typed = useRef(false);
 
@@ -24,10 +25,13 @@ export default function AddressInput({ weddingId, value, onChange, onPick }: {
       });
       if (error) {
         const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
-        if (body?.error === 'ADDRESS_LOOKUP_OFF') lookupOff = true;
+        if (body?.error === 'ADDRESS_LOOKUP_OFF') { lookupOff = true; setNote('Address suggestions aren’t set up yet. Type the address in.'); }
+        else setNote(`Address suggestions aren’t working right now${body?.error ? ` (${body.error})` : ''}. Type the address in, or try again.`);
         setItems([]); return;
       }
+      setNote('');
       setItems(data.suggestions ?? []); setActive(-1); setOpen(true);
+      if (!(data.suggestions ?? []).length && value.trim().length >= 6) setNote('No matches yet. Keep typing the street address.');
     }, 250);
     return () => clearTimeout(t);
   }, [value, weddingId]);
@@ -65,6 +69,7 @@ export default function AddressInput({ weddingId, value, onChange, onPick }: {
           <li className="addr-credit" aria-hidden>Suggestions by Google</li>
         </ul>
       )}
+      {note && <span className="small muted" style={{ display: 'block', marginTop: 4, textTransform: 'none', letterSpacing: 0 }}>{note}</span>}
     </div>
   );
 }
