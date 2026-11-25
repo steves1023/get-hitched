@@ -21,6 +21,8 @@ import Files from './features/Files';
 import Hashtags from './features/Hashtags';
 import Gifts from './features/Gifts';
 const Print = lazy(() => import('./features/Print'));
+const Website = lazy(() => import('./features/Website'));
+const PublicSite = lazy(() => import('./pages/PublicSite'));
 import { ModuleGate } from './pages/ModuleGate';
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -43,6 +45,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/invite/:token" element={<AcceptInvite />} />
+      <Route path="/site/:slug" element={<Suspense fallback={null}><PublicSite /></Suspense>} />
       <Route path="/" element={<Root />} />
       <Route path="/new" element={<RequireAuth><Onboarding /></RequireAuth>} />
       <Route path="/w/:weddingId" element={<RequireAuth><WeddingLayout /></RequireAuth>}>
@@ -58,6 +61,7 @@ export default function App() {
         <Route path="hashtags" element={<ModuleGate module="hashtags"><Hashtags /></ModuleGate>} />
         <Route path="gifts" element={<ModuleGate module="gifts"><Gifts /></ModuleGate>} />
         <Route path="print" element={<Suspense fallback={<p className="muted">Loading…</p>}><Print /></Suspense>} />
+        <Route path="website" element={<Suspense fallback={<p className="muted">Loading…</p>}><Website /></Suspense>} />
         <Route path="settings" element={<Settings />} />
         <Route path="billing" element={<Billing />} />
       </Route>

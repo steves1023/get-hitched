@@ -21,6 +21,7 @@ const TABS: { to: string; module: Module | null; label: string; assignedLabel?: 
   { to: 'files', module: 'files', label: 'Files' },
   { to: 'hashtags', module: 'hashtags', label: '# Hashtags' },
   { to: 'print', module: null, label: 'Print', coupleOnly: true },
+  { to: 'website', module: null, label: 'Website', coupleOnly: true },
 ];
 
 export default function WeddingLayout() {

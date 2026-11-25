@@ -31,6 +31,7 @@ export interface Guest {
   postal_code: string | null; country: string | null; primary_guest_id: string | null;
   /** Set on the two hidden rows that let the couple be seated. They never appear as guests. */
   couple_role: 'partner1' | 'partner2' | null;
+  rsvp_message?: string | null; rsvp_at?: string | null;
 }
 export interface SeatingTable {
   id: string; wedding_id: string; label: string; shape: 'round' | 'rect'; capacity: number; x: number; y: number;
@@ -120,3 +121,12 @@ export const GIFT_KINDS: Record<Gift['kind'], string> = {
   registry: 'Registry', cash: 'Cash', check: 'Check', gift_card: 'Gift card', item: 'Item', experience: 'Experience', other: 'Other',
 };
 export const OCCASIONS: Record<Gift['occasion'], string> = { engagement: 'Engagement', shower: 'Shower', wedding: 'Wedding', other: 'Other' };
+
+export interface SiteSections { schedule: boolean; story: boolean; party: boolean; photos: boolean; travel: boolean; registry: boolean; faq: boolean; rsvp: boolean }
+export interface PartyMember { name: string; role: string; blurb: string; photo: string | null }
+export interface WeddingSite {
+  wedding_id: string; slug: string; published: boolean; published_at: string | null;
+  hero_path: string | null; story: string | null; travel: string | null;
+  registry: { name: string; url: string }[]; faq: { q: string; a: string }[]; party: PartyMember[]; photos: string[];
+  sections: SiteSections; rsvp_deadline: string | null; rsvp_note: string | null;
+}

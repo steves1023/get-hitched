@@ -1,0 +1,57 @@
+/* Public wedding website. Colors and fonts come from the couple's Print design via CSS variables. */
+.ws{background:var(--ws-bg);color:var(--ws-ink);font-family:var(--ws-body);font-size:17px;line-height:1.65;min-height:100vh}
+.ws a{color:var(--ws-accent)}
+.ws-preview{background:#1E1A14;color:#fff;text-align:center;font:600 .8rem/1 system-ui;padding:10px}
+.ws-nav{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 24px;background:color-mix(in srgb,var(--ws-bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid color-mix(in srgb,var(--ws-soft) 50%,transparent)}
+.ws-nav>div{display:flex;gap:18px;overflow-x:auto;white-space:nowrap}
+.ws-nav a{text-decoration:none;color:var(--ws-ink);font-size:.82rem;letter-spacing:.08em;text-transform:uppercase}
+.ws-nav a:hover{color:var(--ws-accent)}
+.ws-mono{font-family:var(--ws-head) !important;font-weight:var(--ws-head-weight);font-size:1.2rem !important;letter-spacing:0 !important;text-transform:none !important;color:var(--ws-accent) !important}
+.ws-hero{min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 24px;background-size:cover;background-position:center}
+.ws-hero.photo{color:#fff}
+.ws-hero h1{font-family:var(--ws-head);font-weight:var(--ws-head-weight);text-transform:var(--ws-head-case);letter-spacing:var(--ws-head-track);font-size:clamp(2.6rem,7vw,5rem);line-height:1.05;margin:0}
+.ws-hero h1.script{font-size:clamp(3.4rem,10vw,7rem);font-weight:400}
+.ws-hero h1 span{color:var(--ws-accent)}
+.ws-hero.photo h1 span{color:inherit;opacity:.85}
+.ws-when{letter-spacing:.18em;text-transform:uppercase;font-size:.82rem;margin:18px 0 6px;opacity:.85}
+.ws-count{margin:0 0 22px;opacity:.85}
+.ws-count b{font-family:var(--ws-head);font-size:1.6rem;color:var(--ws-accent)}
+.ws-hero.photo .ws-count b{color:#fff}
+.ws-btn{display:inline-block;padding:12px 26px;border-radius:999px;background:var(--ws-accent);color:#fff !important;text-decoration:none;border:1.5px solid var(--ws-accent);font:600 .9rem/1.2 var(--ws-body);letter-spacing:.04em;cursor:pointer}
+.ws-btn.outline{background:transparent;color:var(--ws-accent) !important}
+.ws-btn:disabled{opacity:.6;cursor:default}
+.ws-sec{max-width:980px;margin:0 auto;padding:64px 24px;border-top:1px solid color-mix(in srgb,var(--ws-soft) 45%,transparent)}
+.ws-sec.narrow{max-width:680px}
+.ws-h2{font-family:var(--ws-head);font-weight:var(--ws-head-weight);text-transform:var(--ws-head-case);letter-spacing:var(--ws-head-track);font-size:2.2rem;text-align:center;margin:0 0 30px;scroll-margin-top:70px}
+.ws-h2.script{font-size:3rem;font-weight:400}
+.ws-phase{max-width:620px;margin:0 auto 22px}
+.ws-phase h3{font:700 .75rem/1 var(--ws-body);letter-spacing:.16em;text-transform:uppercase;color:var(--ws-accent);margin:0 0 8px}
+.ws-event{display:flex;gap:18px;padding:12px 0;border-bottom:1px solid color-mix(in srgb,var(--ws-soft) 60%,transparent)}
+.ws-time{flex:0 0 92px;font-weight:700;color:var(--ws-accent)}
+.ws-muted{color:var(--ws-muted);font-size:.9rem}
+.ws-party{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:26px;text-align:center}
+.ws-person img,.ws-avatar{width:140px;height:140px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px}
+.ws-avatar{display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ws-soft) 45%,#fff);font-family:var(--ws-head);font-size:2.2rem;color:var(--ws-accent)}
+.ws-person b{display:block;font-size:1.05rem}
+.ws-role{display:block;color:var(--ws-accent);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase}
+.ws-person p{font-size:.92rem;margin:8px 0 0;color:var(--ws-muted)}
+.ws-photos{columns:3 240px;column-gap:12px}
+.ws-photos img{width:100%;border-radius:6px;margin-bottom:12px;display:block}
+.ws-registry{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.ws-faq{border-bottom:1px solid color-mix(in srgb,var(--ws-soft) 60%,transparent);padding:14px 0}
+.ws-faq summary{cursor:pointer;font-weight:700;list-style-position:outside}
+.ws-faq p{margin:10px 0 0}
+.ws-card{background:color-mix(in srgb,#fff 70%,var(--ws-bg));border:1px solid color-mix(in srgb,var(--ws-soft) 60%,transparent);border-radius:18px;padding:26px}
+.ws-card h3{font-family:var(--ws-head);font-size:1.6rem;margin:0 0 8px}
+.ws-label{display:block;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ws-muted);margin:14px 0 6px}
+.ws-find{display:flex;gap:10px;flex-wrap:wrap}
+.ws-find input,.ws-input{flex:1;min-width:200px;width:100%;padding:12px 14px;border:1.5px solid color-mix(in srgb,var(--ws-soft) 80%,transparent);border-radius:10px;background:#fff;font:inherit;font-size:1rem;color:var(--ws-ink);box-sizing:border-box}
+.ws-guest{padding:14px 0;border-bottom:1px solid color-mix(in srgb,var(--ws-soft) 50%,transparent)}
+.ws-choice{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+.ws-choice button{flex:1;min-width:150px;padding:10px;border-radius:10px;border:1.5px solid color-mix(in srgb,var(--ws-soft) 80%,transparent);background:#fff;font:inherit;font-size:.92rem;cursor:pointer;color:var(--ws-ink)}
+.ws-choice button.on{background:var(--ws-accent);border-color:var(--ws-accent);color:#fff}
+.ws-error{color:#9B2335;margin-top:10px}
+.ws-foot{text-align:center;padding:40px 20px;color:var(--ws-muted);font-size:.82rem}
+.ws-blank{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:#FDFAF5;color:#1E1A14;font-family:'Playfair Display',Georgia,serif}
+.ws-blank p{font-family:Inter,system-ui,sans-serif;color:#6B5E4E}
+@media (max-width:640px){.ws-nav{padding:10px 14px}.ws-nav>div{gap:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none}.ws-nav a{font-size:.72rem}.ws-sec{padding:48px 18px}.ws-time{flex-basis:76px}}

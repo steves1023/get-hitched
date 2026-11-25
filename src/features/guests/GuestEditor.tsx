@@ -181,6 +181,12 @@ export default function GuestEditor({ guest, isNew, mode = 'single', head, membe
         </fieldset>
       )}
 
+      {guest.rsvp_at && (
+        <div className="card" style={{ padding: 12, background: 'var(--gold-l)', borderColor: 'transparent' }}>
+          <p className="small"><b>RSVP’d on your website</b> · {new Date(guest.rsvp_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+          {guest.rsvp_message && <p className="small" style={{ marginTop: 4 }}>“{guest.rsvp_message}”</p>}
+        </div>
+      )}
       <label className="field"><span>Notes</span><textarea value={v.notes} onChange={(e) => set({ notes: e.target.value })} placeholder="How you know them, anything worth remembering" /></label>
       {error && <p className="err">{error}</p>}
     </Drawer>
