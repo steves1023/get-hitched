@@ -27,6 +27,8 @@ export interface Expense {
 export interface Guest {
   id: string; wedding_id: string; name: string; side: 'partner1' | 'partner2' | 'both'; rsvp: 'pending' | 'yes' | 'no';
   party_size: number; dietary: string | null; email: string | null; table_id: string | null; seat_index: number | null; notes: string | null;
+  address1: string | null; address2: string | null; city: string | null; state: string | null;
+  postal_code: string | null; country: string | null; primary_guest_id: string | null;
 }
 export interface SeatingTable {
   id: string; wedding_id: string; label: string; shape: 'round' | 'rect'; capacity: number; x: number; y: number;
