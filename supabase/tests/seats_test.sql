@@ -24,25 +24,26 @@ select lives_ok($$insert into invites (wedding_id, email, display_name, role) va
 select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','p2@x.dev','P2','partner')$$,
   'P0001', 'PARTNER_EXISTS', 'only one partner');
 select is(public.seat_limit('10000000-0000-0000-0000-0000000000e2', 'full'), 0, 'the pass includes no full spots');
-select is(public.seat_limit('10000000-0000-0000-0000-0000000000e2', 'party'), 0, 'the pass includes no party spots');
+select is(public.seat_limit('10000000-0000-0000-0000-0000000000e2', 'party'), 100, 'wedding party spots are free once activated (up to 100)');
 select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','m@x.dev','Mom','family')$$,
   'P0001', 'NO_FULL_SPOTS', 'a parent needs a Parents and Planners spot');
-select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','b@x.dev','Bea','wedding_party')$$,
-  'P0001', 'NO_PARTY_SPOTS', 'a bridesmaid needs a Wedding Party spot');
+select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e1','b@x.dev','Bea','wedding_party')$$,
+  'P0001', 'NO_PARTY_SPOTS', 'no one joins an unactivated wedding, even free spots');
 select throws_ok($$select public.add_seats('10000000-0000-0000-0000-0000000000e2', 'full', 3)$$,
   '42501', null, 'couples cannot grant themselves spots');
 
 -- Webhook (service role) records purchases
 reset role;
 select is(public.add_seats('10000000-0000-0000-0000-0000000000e2', 'full', 2), 2, '2 Parents and Planners spots bought');
-select is(public.add_seats('10000000-0000-0000-0000-0000000000e2', 'party', 1), 1, '1 Wedding Party spot bought');
+select is(public.add_seats('10000000-0000-0000-0000-0000000000e2', 'full', 0 + 1), 3, 'a third Parents and Planners spot bought');
 set local role authenticated;
 
 select lives_ok($$insert into invites (wedding_id, email, display_name, role) values
   ('10000000-0000-0000-0000-0000000000e2','m@x.dev','Mom','family'),
-  ('10000000-0000-0000-0000-0000000000e2','pl@x.dev','Pat','planner')$$, 'two full spots used');
+  ('10000000-0000-0000-0000-0000000000e2','pl@x.dev','Pat','planner'),
+  ('10000000-0000-0000-0000-0000000000e2','gm@x.dev','Gran','family')$$, 'three full spots used');
 select throws_ok($$insert into invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000e2','d@x.dev','Dad','family')$$,
-  'P0001', 'NO_FULL_SPOTS', 'a third full person is blocked');
+  'P0001', 'NO_FULL_SPOTS', 'a fourth full person is blocked');
 insert into invites (wedding_id, email, display_name, role, access)
 values ('10000000-0000-0000-0000-0000000000e2','b@x.dev','Bea','wedding_party','{"budget":"edit","day":"edit"}');
 select is((select access from invites where email = 'b@x.dev'), '{"day":"assigned"}'::jsonb,

@@ -31,7 +31,7 @@ set local role authenticated;
 select is(public.redeem_promo_code('10000000-0000-0000-0000-0000000000b9', 'family2'),
   '{"kind":"full_seats","seats_added":2,"seat_limit":2}'::jsonb, 'family code adds 2 Parents and Planners spots');
 select is(public.redeem_promo_code('10000000-0000-0000-0000-0000000000b9', 'PARTY6'),
-  '{"kind":"party_seats","seats_added":6,"seat_limit":6}'::jsonb, 'party code adds 6 Wedding Party spots');
+  '{"kind":"party_seats","seats_added":6,"seat_limit":100}'::jsonb, 'old party codes still redeem harmlessly (party spots are free)');
 select is(public.seat_limit('10000000-0000-0000-0000-0000000000b9', 'full'), 2, 'full spots unchanged by the party code');
 select lives_ok($$insert into public.invites (wedding_id, email, display_name, role)
   select '10000000-0000-0000-0000-0000000000b9', 'g' || i || '@x.dev', 'G' || i, 'wedding_party' from generate_series(1,6) i$$,

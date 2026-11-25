@@ -1,6 +1,6 @@
 // POST { action: 'pass', wedding_id }                        -> { url }  Bride and Groom ($29.99, the couple)
-// POST { action: 'seats', wedding_id, seat_type, qty? }      -> { url }  seat_type 'full' = Parents and Planners ($3.99 each),
-//                                                                        'party' = Wedding Party ($1.99 each); quantity adjustable
+// POST { action: 'seats', wedding_id, seat_type: 'full', qty? } -> { url }  Parents and Planners ($0.99 each); quantity adjustable
+//      (Wedding Party spots are free and need no checkout.)
 // POST { action: 'portal', wedding_id }          -> { url }  Stripe customer portal (receipts)
 import Stripe from 'npm:stripe@17.7.0';
 import { corsHeaders, json } from '../_shared/cors.ts';
@@ -60,8 +60,8 @@ Deno.serve(async (req) => {
 
   if (action === 'seats') {
     if (!hasPass) return json({ error: 'PASS_REQUIRED' }, 400);
-    if (seat_type !== 'full' && seat_type !== 'party') return json({ error: 'BAD_REQUEST' }, 400);
-    const price = Deno.env.get(seat_type === 'full' ? 'STRIPE_PRICE_FULL' : 'STRIPE_PRICE_PARTY');
+    if (seat_type !== 'full') return json({ error: 'BAD_REQUEST' }, 400);
+    const price = Deno.env.get('STRIPE_PRICE_FULL');
     if (!price) return json({ error: 'PRICE_NOT_CONFIGURED' }, 500);
     const start = Math.max(1, Math.min(100, Number(qty) || 1));
     const session = await stripe.checkout.sessions.create({
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       ...customer,
       invoice_creation: { enabled: true },
       client_reference_id: wedding_id,
-      metadata: { wedding_id, kind: seat_type === 'full' ? 'full_seats' : 'party_seats' },
+      metadata: { wedding_id, kind: 'full_seats' },
       success_url: `${back}?status=seats`,
       cancel_url: `${back}?status=cancelled`,
     });

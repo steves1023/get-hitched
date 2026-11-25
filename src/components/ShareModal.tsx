@@ -13,7 +13,7 @@ const ROLES: InvitableRole[] = ['partner', 'planner', 'family', 'wedding_party',
 const SPOT_NAME: Record<SeatType, string> = { full: PRICING.fullName, party: PRICING.partyName };
 const roleOption = (r: InvitableRole) => {
   const t = seatTypeOf(r);
-  return t ? `${ROLE_LABEL[r]} · uses a ${SPOT_NAME[t]} spot` : `${ROLE_LABEL[r]} · free`;
+  return t === 'full' ? `${ROLE_LABEL[r]} · uses a ${SPOT_NAME.full} spot (${PRICING.full})` : `${ROLE_LABEL[r]} · free`;
 };
 const LEVELS: { value: Level; label: string }[] = [
   { value: 'none', label: 'Hidden' }, { value: 'assigned', label: 'Only theirs' }, { value: 'read', label: 'View' }, { value: 'edit', label: 'Edit' },
@@ -164,14 +164,15 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
           <h3 className="ct" style={{ marginTop: 18 }}>Invite someone</h3>
           <p className="small" style={{ marginBottom: 10 }}>
             Spots in use: <b>{used('full')} of {seatLimit(hasPass, entitlement, 'full')}</b> {PRICING.fullName} ·{' '}
-            <b>{used('party')} of {seatLimit(hasPass, entitlement, 'party')}</b> {PRICING.partyName}. Your partner is free; open invites hold a spot.
+            <b>{used('party')}</b> {PRICING.partyName} (free). Your partner is free too; open invites hold a spot.
           </p>
-          {full && roleType && (
+          {full && roleType === 'full' && (
             <p className="small" style={{ marginBottom: 10 }}>
-              No {SPOT_NAME[roleType]} spots left. Add more for {roleType === 'full' ? PRICING.full : PRICING.party} each on{' '}
+              No {SPOT_NAME.full} spots left. Add more for {PRICING.full} each on{' '}
               <Link to={`/w/${wedding.id}/billing`} onClick={onClose}>Billing</Link>.
             </p>
           )}
+          {full && roleType === 'party' && <p className="small" style={{ marginBottom: 10 }}>You’ve reached {PRICING.partyCap} wedding party invites.</p>}
           <form onSubmit={sendInvite}>
             <div className="g2">
               <label className="field"><span>Name *</span><input required value={name} onChange={(e) => setName(e.target.value)} /></label>

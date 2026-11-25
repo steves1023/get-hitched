@@ -50,8 +50,8 @@ export interface Entitlement {
 /** Display prices. Stripe charges whatever the price IDs say, so keep these in step with Stripe. */
 export const PRICING = {
   pass: '$29.99', passName: 'Bride and Groom',
-  full: '$3.99', fullCents: 399, fullName: 'Parents and Planners',
-  party: '$1.99', partyCents: 199, partyName: 'Wedding Party',
+  full: '$0.99', fullCents: 99, fullName: 'Parents and Planners',
+  party: 'Free', partyName: 'Wedding Party', partyCap: 100,
 } as const;
 
 export type SeatType = 'full' | 'party';
@@ -61,7 +61,7 @@ export const seatTypeOf = (r: Role): SeatType | null =>
 
 /** Spots of one type this wedding may fill. Mirrors public.seat_limit(). */
 export const seatLimit = (hasPass: boolean, ent: Entitlement | null, t: SeatType) =>
-  !hasPass || !ent ? 0 : t === 'full' ? ent.full_seats : ent.party_seats;
+  !hasPass || !ent ? 0 : t === 'full' ? ent.full_seats : PRICING.partyCap;
 export interface Summary {
   wedding_id: string; total_budget: number; tasks_total: number; tasks_done: number;
   guests_total: number; rsvp_yes: number; rsvp_pending: number; spent: number;

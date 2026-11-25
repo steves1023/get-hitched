@@ -4,7 +4,7 @@ const MESSAGES: Record<string, string> = {
   FREE_LIMIT_COLLABORATORS: 'This wedding has reached its limit of people. The couple can add more on the Billing page.',
   SEAT_LIMIT: 'All of this wedding’s spots for people are taken. The couple can add more on the Billing page.',
   NO_FULL_SPOTS: 'All your Parents and Planners spots are in use. Add more on the Billing page.',
-  NO_PARTY_SPOTS: 'All your Wedding Party spots are in use. Add more on the Billing page.',
+  NO_PARTY_SPOTS: 'Wedding Party invites open once your wedding is activated (up to 100 people).',
   PARTY_DAY_ONLY: 'Wedding Party spots include only the Wedding Day tab. To give more access, invite them as a parent or planner.',
   PARTNER_EXISTS: 'This wedding already has a partner. Invite this person with a different role.',
   FREE_LIMIT_HASHTAGS: 'The free plan includes 3 hashtag generations. Get the Wedding Pass for more.',

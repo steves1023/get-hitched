@@ -12,10 +12,10 @@ import { Bar, PageHeader } from '../components/ui';
 const PASS_FEATURES = ['Tasks, vendors, budget and guest list', 'Seating chart and wedding day timeline',
   'Vision board, files and hashtag ideas', 'Valid through your wedding date plus 90 days'];
 
-const SPOTS: Record<SeatType, { name: string; price: string; cents: number; blurb: string }> = {
-  full: { name: PRICING.fullName, price: PRICING.full, cents: PRICING.fullCents,
+const SPOTS: Record<SeatType, { name: string; price: string; blurb: string }> = {
+  full: { name: PRICING.fullName, price: `${PRICING.full} per person`,
     blurb: 'Full access to planning, like you. You can hide any tab per person.' },
-  party: { name: PRICING.partyName, price: PRICING.party, cents: PRICING.partyCents,
+  party: { name: PRICING.partyName, price: `free, up to ${PRICING.partyCap}`,
     blurb: 'The Wedding Day tab only: party items and anything you assign to them.' },
 };
 
@@ -90,9 +90,9 @@ export default function Billing() {
           </div>
           <div className="card">
             <h2 className="ct">Bringing others in later</h2>
-            <p className="small" style={{ marginBottom: 10 }}>After you activate, add people one at a time. Your partner is always free.</p>
+            <p className="small" style={{ marginBottom: 10 }}>After you activate, invite people from Share. Your partner is always free.</p>
             {(['full', 'party'] as SeatType[]).map((t) => (
-              <p key={t} style={{ marginBottom: 8 }}><b>{SPOTS[t].name}</b> · {SPOTS[t].price} per person<br /><span className="small muted">{SPOTS[t].blurb}</span></p>
+              <p key={t} style={{ marginBottom: 8 }}><b>{SPOTS[t].name}</b> · {SPOTS[t].price}<br /><span className="small muted">{SPOTS[t].blurb}</span></p>
             ))}
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function Billing() {
             <div className="g2">
               {(['full', 'party'] as SeatType[]).map((t) => (
                 <SpotCard key={t} type={t} used={used(t)} limit={seatLimit(hasPass, entitlement, t)} busy={busy}
-                  onBuy={(qty) => go({ action: 'seats', seat_type: t, qty })} />
+                  onBuy={t === 'full' ? (qty) => go({ action: 'seats', seat_type: 'full', qty }) : undefined} />
               ))}
             </div>
           )}
@@ -134,23 +134,25 @@ export default function Billing() {
   );
 }
 
-function SpotCard({ type, used, limit, busy, onBuy }: { type: SeatType; used: number; limit: number; busy: boolean; onBuy: (qty: number) => void }) {
+function SpotCard({ type, used, limit, busy, onBuy }: { type: SeatType; used: number; limit: number; busy: boolean; onBuy?: (qty: number) => void }) {
   const s = SPOTS[type];
-  const [qty, setQty] = useState(type === 'party' ? 6 : 2);
+  const [qty, setQty] = useState(2);
   return (
     <div className="card">
-      <h2 className="ct">{s.name} · {s.price} each</h2>
+      <h2 className="ct">{s.name} · {s.price}</h2>
       <p className="small muted" style={{ marginTop: -8, marginBottom: 12 }}>{s.blurb}</p>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Spots in use</span><b>{used} of {limit}</b></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{onBuy ? 'Spots in use' : 'People invited'}</span><b>{used} of {limit}</b></div>
       <Bar pct={limit ? Math.min(100, Math.round((used / limit) * 100)) : 0} />
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', marginTop: 12 }}>
-        <label className="field" style={{ marginBottom: 0, width: 96 }}><span>Add</span>
-          <input type="number" min={1} max={100} value={qty} onChange={(e) => setQty(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} />
-        </label>
-        <button className="btn" disabled={busy} onClick={() => onBuy(qty)}>
-          Add {qty} · {moneyCents(qty * s.cents)}
-        </button>
-      </div>
+      {onBuy ? (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', marginTop: 12 }}>
+          <label className="field" style={{ marginBottom: 0, width: 96 }}><span>Add</span>
+            <input type="number" min={1} max={100} value={qty} onChange={(e) => setQty(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} />
+          </label>
+          <button className="btn" disabled={busy} onClick={() => onBuy(qty)}>
+            Add {qty} · {moneyCents(qty * PRICING.fullCents)}
+          </button>
+        </div>
+      ) : <p className="small muted" style={{ marginTop: 10 }}>No purchase needed. Invite them from Share.</p>}
     </div>
   );
 }

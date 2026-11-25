@@ -130,7 +130,7 @@ export default function Landing() {
           <div className="lp-steps">
             <div className="lp-step"><h3>Tell us the basics</h3><p>Your names, the date and the venue. Everything can change later.</p></div>
             <div className="lp-step"><h3>Activate for {PRICING.pass}</h3><p>One payment for the two of you unlocks every tool through your wedding date plus 90 days.</p></div>
-            <div className="lp-step"><h3>Invite your people</h3><p>Parents and planners for {PRICING.full}, wedding party for {PRICING.party}, each by email.</p></div>
+            <div className="lp-step"><h3>Invite your people</h3><p>Parents and planners for {PRICING.full} each; your wedding party is free.</p></div>
           </div>
         </div>
       </section>
@@ -158,9 +158,9 @@ export default function Landing() {
                 <p>Full access to planning, like the two of you. Hide any tab per person.</p>
               </div>
               <div>
-                <div className="amt">{PRICING.party} <small className="muted" style={{ fontSize: '.9rem', fontFamily: 'var(--sans)' }}>per person</small></div>
+                <div className="amt">{PRICING.party}</div>
                 <b>{PRICING.partyName}</b>
-                <p>The wedding day schedule: party moments and anything you assign to them. Vendors use this too.</p>
+                <p>The wedding day schedule: party moments and anything you assign to them. Invite your whole party and your vendors at no cost.</p>
               </div>
               <div className="lp-faq">
                 <div><b>Does my partner cost extra?</b><span>No. {PRICING.passName} covers both of you.</span></div>
