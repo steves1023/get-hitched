@@ -1,14 +1,14 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAccess } from '../lib/access';
 import { useRealtime, useRows, useTableMutations } from '../hooks/data';
 import { supabase } from '../lib/supabase';
 import { friendly, functionError } from '../lib/errors';
-import type { Guest, RoomItem, SeatingLayout, SeatingTable } from '../lib/types';
+import type { Guest, RoomItem, RoomWall, SeatingLayout, SeatingTable } from '../lib/types';
 import { Drawer, Empty, Locked, PageHeader } from '../components/ui';
 import {
-  CHAIR_R, ITEM_KINDS, TABLE_KINDS, canSit, footprint, initials, occupancy, roomFromArea, seatOffsets,
-  type ItemKind, type Seat, type SeatGuest, type TableKind,
+  CHAIR_R, ITEM_KINDS, TABLE_KINDS, WALL_KINDS, canSit, feetInches, footprint, initials, occupancy, roomFromArea, seatOffsets, snapWallPoint,
+  type ItemKind, type Pt, type Seat, type SeatGuest, type TableKind, type WallKind,
 } from './seating/geometry';
 
 const PAD = 3;                     // feet of margin around the room for dimension labels
@@ -27,6 +27,7 @@ export default function Seating() {
 
   const tables = useRows<SeatingTable>('seating_tables', wedding.id, 'created_at');
   const items = useRows<RoomItem>('room_items', wedding.id, 'created_at');
+  const walls = useRows<RoomWall>('room_walls', wedding.id, 'created_at');
   const guests = useRows<Guest>('guests', wedding.id, 'name', true, levels.guests !== 'none');
   const layoutQ = useQuery({
     queryKey: ['seating_layouts', wedding.id],
@@ -38,9 +39,11 @@ export default function Seating() {
   });
   const tm = useTableMutations<SeatingTable>('seating_tables', wedding.id);
   const im = useTableMutations<RoomItem>('room_items', wedding.id);
+  const wm = useTableMutations<RoomWall>('room_walls', wedding.id);
   const gm = useTableMutations<Guest>('guests', wedding.id);
   useRealtime('seating_tables', wedding.id);
   useRealtime('room_items', wedding.id);
+  useRealtime('room_walls', wedding.id);
   useRealtime('guests', wedding.id);
   useRealtime('seating_layouts', wedding.id);
 
@@ -55,12 +58,26 @@ export default function Seating() {
   const [openItem, setOpenItem] = useState<RoomItem | null>(null);
   const [panel, setPanel] = useState<'room' | 'table' | 'feature' | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [draw, setDraw] = useState<{ kind: WallKind; start: Pt | null } | null>(null);
+  const [cursor, setCursor] = useState<Pt | null>(null);
+  const [openWall, setOpenWall] = useState<RoomWall | null>(null);
+
+  useEffect(() => {
+    if (!draw) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { if (draw.start) setDraw({ ...draw, start: null }); else setDraw(null); setCursor(null); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [draw]);
   const [error, setError] = useState('');
 
   const W = Number(layoutQ.data?.width_ft ?? 60);
   const L = Number(layoutQ.data?.length_ft ?? 40);
   const all = guests.data ?? [];
   const list = tables.data ?? [];
+  const wallList = walls.data ?? [];
+  const wallEnds: Pt[] = wallList.flatMap((w) => [{ x: Number(w.x1), y: Number(w.y1) }, { x: Number(w.x2), y: Number(w.y2) }]);
 
   const seatsByTable = useMemo(() => {
     const m: Record<string, Seat[]> = {};
@@ -114,6 +131,23 @@ export default function Seating() {
       if (d.kind === 'table') await tm.update.mutateAsync(patch); else await im.update.mutateAsync(patch);
     } catch (err) { setError(friendly(err)); }
     finally { setLocal((l) => { const n = { ...l }; delete n[d.id]; return n; }); }
+  };
+
+  // ---------- drawing walls ----------
+  const drawMove = (e: React.PointerEvent) => {
+    if (!draw) return;
+    setCursor(snapWallPoint(toFeet(e), draw.start, wallEnds, W, L));
+  };
+  const drawClick = async (e: React.PointerEvent) => {
+    if (!draw) return;
+    e.stopPropagation();
+    const p = snapWallPoint(toFeet(e), draw.start, wallEnds, W, L);
+    if (!draw.start) return setDraw({ ...draw, start: p });
+    if (Math.hypot(p.x - draw.start.x, p.y - draw.start.y) < 0.5) return;   // too short: ignore
+    try {
+      await wm.insert.mutateAsync({ kind: draw.kind, x1: draw.start.x, y1: draw.start.y, x2: p.x, y2: p.y });
+      setDraw({ ...draw, start: p });   // keep going from the end, like tracing a floor plan
+    } catch (err) { setError(friendly(err)); }
   };
 
   // ---------- seating guests ----------
@@ -171,11 +205,26 @@ export default function Seating() {
       <PageHeader title="Seating chart" sub={`${layoutQ.data?.room_name || 'Your room'} · ${W} × ${L} ft · drawn to scale`} action={canEdit && (
         <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button className="btn g" onClick={() => setPanel('room')}>Room size</button>
+          <button className="btn g" onClick={() => { setDraw({ kind: 'wall', start: null }); setPick(null); setHeld(null); }}>+ Wall</button>
           <button className="btn g" onClick={() => setPanel('feature')}>+ Feature</button>
           <button className="btn" onClick={() => setPanel('table')}>+ Table</button>
         </span>
       )} />
       {error && <p className="err" role="alert">{error}</p>}
+      {draw && (
+        <div className="card" style={{ padding: '10px 14px', marginBottom: 8, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <b className="small">Drawing</b>
+          <div role="group" aria-label="Wall type" style={{ display: 'flex', gap: 4 }}>
+            {(Object.keys(WALL_KINDS) as WallKind[]).map((k) => (
+              <button key={k} className={`f${draw.kind === k ? ' on' : ''}`} title={WALL_KINDS[k].hint} onClick={() => setDraw({ ...draw, kind: k })}>{WALL_KINDS[k].label}</button>
+            ))}
+          </div>
+          <span className="small muted" style={{ flex: 1, minWidth: 220 }}>
+            {draw.start ? 'Click where this wall ends. It continues from there; press Esc to start a separate wall.' : 'Click where the wall starts.'}
+          </span>
+          <button className="btn sm" onClick={() => { setDraw(null); setCursor(null); }}>Done</button>
+        </div>
+      )}
       {held && (
         <p className="small" style={{ marginBottom: 8 }}>
           Tap an empty chair <b>+</b> to seat <b>{held.name}</b>{held.party_size > 1 ? ` (party of ${held.party_size})` : ''}.{' '}
@@ -228,18 +277,51 @@ export default function Seating() {
             <text x={11} y={0.3} fontSize={0.8} fill="#6B5E4E" fontFamily="Inter, sans-serif">10 ft</text>
           </g>
 
+          {/* Areas sit under everything */}
+          {(items.data ?? []).filter((it) => it.kind === 'area').map((it) => {
+            const p = posOf(it.id, it.x, it.y); const w = Number(it.w), h = Number(it.h);
+            return (
+              <g key={it.id} style={{ cursor: canEdit ? 'grab' : 'default' }}
+                onPointerDown={(e) => startDrag(e, 'item', it.id, p.x, p.y)} onPointerUp={() => endDrag(() => canEdit && setOpenItem(it))}>
+                <rect x={p.x - w / 2} y={p.y - h / 2} width={w} height={h} rx={0.4} fill="#8FAF8E" fillOpacity={0.1} stroke="#8FAF8E" strokeWidth={0.1} strokeDasharray="0.8 0.4" />
+                <text x={p.x - w / 2 + 0.6} y={p.y - h / 2 + 1.3} fontSize={0.9} fill="#4D7050" fontFamily="Inter, sans-serif" fontWeight={600} pointerEvents="none">{it.label || 'Area'}</text>
+              </g>
+            );
+          })}
+
+          {/* Walls */}
+          {wallList.map((w) => {
+            const st = WALL_KINDS[w.kind];
+            const x1 = Number(w.x1), y1 = Number(w.y1), x2 = Number(w.x2), y2 = Number(w.y2);
+            return (
+              <g key={w.id} style={{ cursor: canEdit && !draw ? 'pointer' : 'default' }} onClick={(e) => { e.stopPropagation(); if (canEdit && !draw) setOpenWall(w); }}>
+                <title>{`${st.label} · ${feetInches(Math.hypot(x2 - x1, y2 - y1))}`}</title>
+                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth={1.4} />
+                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={openWall?.id === w.id ? '#9E5E54' : st.stroke} strokeWidth={st.width} strokeLinecap="square" strokeDasharray={st.dash} />
+              </g>
+            );
+          })}
+
           {/* Room features */}
-          {(items.data ?? []).map((it) => {
+          {(items.data ?? []).filter((it) => it.kind !== 'area').map((it) => {
             const p = posOf(it.id, it.x, it.y); const w = Number(it.w), h = Number(it.h);
             const floor = it.kind === 'dance_floor';
             return (
               <g key={it.id} style={{ cursor: canEdit ? 'grab' : 'default' }}
                 onPointerDown={(e) => startDrag(e, 'item', it.id, p.x, p.y)} onPointerUp={() => endDrag(() => canEdit && setOpenItem(it))}>
                 <rect x={p.x - w / 2} y={p.y - h / 2} width={w} height={h} rx={0.3}
-                  fill={floor ? 'url(#parquet)' : '#F3EEE6'} stroke={floor ? '#C4A35A' : '#A89880'} strokeWidth={0.12} strokeDasharray={floor ? undefined : '0.5 0.3'} />
-                <text x={p.x} y={p.y + 0.3} textAnchor="middle" fontSize={Math.min(1, h * 0.45)} fill="#6B5E4E" fontFamily="Inter, sans-serif" fontWeight={600} pointerEvents="none">
-                  {it.label || ITEM_KINDS[it.kind].label}
-                </text>
+                  fill={floor ? 'url(#parquet)' : it.kind === 'column' ? '#D8CCBE' : '#F3EEE6'} stroke={floor ? '#C4A35A' : it.kind === 'column' ? '#6B5E4E' : '#A89880'}
+                  strokeWidth={0.12} strokeDasharray={floor || it.kind === 'column' ? undefined : '0.5 0.3'} />
+                {it.kind !== 'column' && (() => {
+                  const tall = h > w * 1.4;                        // narrow pieces (a bar along a wall) get a sideways label
+                  const fs = Math.min(1, (tall ? w : h) * 0.45);
+                  return (
+                    <text x={p.x} y={p.y + fs * 0.35} textAnchor="middle" fontSize={fs} fill="#6B5E4E" fontFamily="Inter, sans-serif" fontWeight={600}
+                      pointerEvents="none" transform={tall ? `rotate(-90 ${p.x} ${p.y})` : undefined}>
+                      {it.label || ITEM_KINDS[it.kind].label}
+                    </text>
+                  );
+                })()}
               </g>
             );
           })}
@@ -294,6 +376,25 @@ export default function Seating() {
               </g>
             );
           })}
+          {/* Drawing layer: on top of everything while drawing walls */}
+          {draw && (
+            <>
+              {draw.start && cursor && (
+                <g pointerEvents="none">
+                  <line x1={draw.start.x} y1={draw.start.y} x2={cursor.x} y2={cursor.y} stroke={WALL_KINDS[draw.kind].stroke}
+                    strokeWidth={WALL_KINDS[draw.kind].width} strokeOpacity={0.6} strokeDasharray={WALL_KINDS[draw.kind].dash} strokeLinecap="square" />
+                  <rect x={(draw.start.x + cursor.x) / 2 - 1.6} y={(draw.start.y + cursor.y) / 2 - 1.55} width={3.2} height={1.1} rx={0.3} fill="#1E1A14" fillOpacity={0.8} />
+                  <text x={(draw.start.x + cursor.x) / 2} y={(draw.start.y + cursor.y) / 2 - 0.75} textAnchor="middle" fontSize={0.7} fill="#fff" fontFamily="Inter, sans-serif">
+                    {feetInches(Math.hypot(cursor.x - draw.start.x, cursor.y - draw.start.y))}
+                  </text>
+                </g>
+              )}
+              {draw.start && <circle cx={draw.start.x} cy={draw.start.y} r={0.35} fill="#9E5E54" pointerEvents="none" />}
+              {cursor && <circle cx={cursor.x} cy={cursor.y} r={0.3} fill="none" stroke="#9E5E54" strokeWidth={0.1} pointerEvents="none" />}
+              <rect x={-PAD} y={-PAD} width={W + PAD * 2} height={L + PAD * 2} fill="transparent" style={{ cursor: 'crosshair' }}
+                onPointerMove={drawMove} onPointerDown={drawClick} onPointerLeave={() => setCursor(null)} />
+            </>
+          )}
         </svg>
 
         {/* Chair picker */}
@@ -372,6 +473,10 @@ export default function Seating() {
         onClose={() => setOpenTable(null)} onUnseat={unseat}
         onSave={async (patch) => { await tm.update.mutateAsync({ id: openTable!.id, ...patch }); setOpenTable(null); }}
         onDelete={async () => { await tm.remove.mutateAsync(openTable!.id); gm.refresh(); setOpenTable(null); }} />
+
+      <WallDrawer wall={openWall} onClose={() => setOpenWall(null)}
+        onSave={async (kind) => { await wm.update.mutateAsync({ id: openWall!.id, kind }); setOpenWall(null); }}
+        onDelete={async () => { await wm.remove.mutateAsync(openWall!.id); setOpenWall(null); }} />
 
       <ItemDrawer item={openItem} onClose={() => setOpenItem(null)}
         onSave={async (patch) => { await im.update.mutateAsync({ id: openItem!.id, ...patch }); setOpenItem(null); }}
@@ -549,6 +654,35 @@ function ItemDrawer({ item, onClose, onSave, onDelete }: {
         <label className="field"><span>Depth (ft)</span><input type="number" min={1} max={200} value={h} onChange={(e) => setH(e.target.value)} /></label>
       </div>
       <p className="small muted">Drag it on the plan to move it.</p>
+      {error && <p className="err">{error}</p>}
+    </Drawer>
+  );
+}
+
+function WallDrawer({ wall, onClose, onSave, onDelete }: {
+  wall: RoomWall | null; onClose: () => void; onSave: (kind: WallKind) => Promise<void>; onDelete: () => Promise<void>;
+}) {
+  const [kind, setKind] = useState<WallKind>('wall'); const [forId, setForId] = useState<string | null>(null); const [error, setError] = useState('');
+  if (wall && forId !== wall.id) { setForId(wall.id); setKind(wall.kind); setError(''); }
+  if (!wall && forId) setForId(null);
+  if (!wall) return null;
+  const len = Math.hypot(Number(wall.x2) - Number(wall.x1), Number(wall.y2) - Number(wall.y1));
+  return (
+    <Drawer open title={`${WALL_KINDS[wall.kind].label} · ${feetInches(len)}`} onClose={onClose} footer={
+      <>
+        <button className="btn danger" onClick={() => onDelete().catch((e) => setError(friendly(e)))}>Delete</button>
+        <button className="btn" onClick={() => onSave(kind).catch((e) => setError(friendly(e)))}>Save</button>
+      </>
+    }>
+      <div className="field"><span>Type</span>
+        <div className="checks">
+          {(Object.keys(WALL_KINDS) as WallKind[]).map((k) => (
+            <label key={k}><input type="radio" name="wallkind" checked={kind === k} onChange={() => setKind(k)} />
+              <span><b>{WALL_KINDS[k].label}</b> <span className="small muted">· {WALL_KINDS[k].hint}</span></span></label>
+          ))}
+        </div>
+      </div>
+      <p className="small muted">To move a wall, delete it and draw it again with <b>+ Wall</b>. Leave a gap between walls for a doorway.</p>
       {error && <p className="err">{error}</p>}
     </Drawer>
   );

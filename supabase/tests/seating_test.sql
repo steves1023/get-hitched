@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path to public, extensions;
-select plan(8);
+select plan(12);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000c1', 'couple@test.dev'), ('00000000-0000-0000-0000-0000000000c2', 'mom@test.dev');
@@ -25,9 +25,14 @@ select is((select seat_index from guests where id = '70000000-0000-0000-0000-000
 update guests set table_id = null where id = '70000000-0000-0000-0000-0000000000c1';
 select is((select seat_index from guests where id = '70000000-0000-0000-0000-0000000000c1'), null, 'unseating clears the chair');
 
+select lives_ok($$insert into room_walls (wedding_id, kind, x1, y1, x2, y2) values ('10000000-0000-0000-0000-0000000000c1', 'wall', 30, 0, 30, 18)$$, 'couple draws a wall');
+select throws_ok($$insert into room_walls (wedding_id, x1, y1, x2, y2) values ('10000000-0000-0000-0000-0000000000c1', 5, 5, 5, 5)$$, '23514', null, 'a wall needs two different ends');
+select lives_ok($$insert into room_items (wedding_id, kind, label, x, y, w, h) values ('10000000-0000-0000-0000-0000000000c1', 'area', 'North side', 15, 10, 30, 20)$$, 'couple marks an area');
+
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-0000000000c2","email":"mom@test.dev"}';
+select is((select count(*)::int from room_walls), 1, 'view-only family sees the walls');
 select is((select width_ft::int from seating_layouts), 80, 'view-only family can see the room');
-select is((select count(*)::int from room_items), 1, 'and its features');
+select is((select count(*)::int from room_items), 2, 'and its features');
 select throws_ok($$insert into room_items (wedding_id, kind, x, y, w, h) values ('10000000-0000-0000-0000-0000000000c1', 'bar', 5, 5, 8, 3)$$, '42501', null, 'but cannot change them');
 
 select * from finish();

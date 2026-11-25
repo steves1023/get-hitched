@@ -32,7 +32,8 @@ export interface SeatingTable {
   id: string; wedding_id: string; label: string; shape: 'round' | 'rect'; capacity: number; x: number; y: number;
   kind: 'round60' | 'round72' | 'rect6' | 'rect8' | 'sweetheart'; rotation: 0 | 90;
 }
-export interface RoomItem { id: string; wedding_id: string; kind: 'dance_floor' | 'dj' | 'bar' | 'stage' | 'entrance' | 'cake' | 'buffet'; label: string | null; x: number; y: number; w: number; h: number }
+export interface RoomItem { id: string; wedding_id: string; kind: 'dance_floor' | 'dj' | 'bar' | 'stage' | 'entrance' | 'cake' | 'buffet' | 'area' | 'column'; label: string | null; x: number; y: number; w: number; h: number }
+export interface RoomWall { id: string; wedding_id: string; kind: 'wall' | 'half_wall' | 'divider'; x1: number; y1: number; x2: number; y2: number }
 export interface SeatingLayout { wedding_id: string; room_name: string | null; width_ft: number; length_ft: number; venue_url: string | null }
 export interface DayItem {
   id: string; wedding_id: string; start_time: string; title: string; who: string | null; location: string | null;

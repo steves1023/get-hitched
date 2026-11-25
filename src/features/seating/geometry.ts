@@ -1,7 +1,8 @@
 // Real-world table sizes (feet) and chair placement. All coordinates are feet.
 
 export type TableKind = 'round60' | 'round72' | 'rect6' | 'rect8' | 'sweetheart';
-export type ItemKind = 'dance_floor' | 'dj' | 'bar' | 'stage' | 'entrance' | 'cake' | 'buffet';
+export type ItemKind = 'dance_floor' | 'dj' | 'bar' | 'stage' | 'entrance' | 'cake' | 'buffet' | 'area' | 'column';
+export type WallKind = 'wall' | 'half_wall' | 'divider';
 
 export interface KindSpec { label: string; round: boolean; w: number; h: number; seats: number; max: number }
 
@@ -21,7 +22,47 @@ export const ITEM_KINDS: Record<ItemKind, { label: string; w: number; h: number 
   entrance:    { label: 'Entrance',    w: 6,  h: 1 },
   cake:        { label: 'Cake table',  w: 3,  h: 3 },
   buffet:      { label: 'Buffet',      w: 12, h: 3 },
+  area:        { label: 'Area',        w: 20, h: 15 },
+  column:      { label: 'Column',      w: 2,  h: 2 },
 };
+
+export const WALL_KINDS: Record<WallKind, { label: string; hint: string; stroke: string; width: number; dash?: string }> = {
+  wall:      { label: 'Wall',      hint: 'Full-height wall',                 stroke: '#4A4036', width: 0.5 },
+  half_wall: { label: 'Half wall', hint: 'Low wall or bar back you can see over', stroke: '#8B7B66', width: 0.35 },
+  divider:   { label: 'Divider',   hint: 'Drape, screen or movable partition', stroke: '#A89880', width: 0.2, dash: '0.6 0.4' },
+};
+
+export type Pt = { x: number; y: number };
+
+/** 12′ 6″ style length. */
+export function feetInches(ft: number): string {
+  const total = Math.round(ft * 12);
+  const f = Math.floor(total / 12), i = total % 12;
+  return i ? `${f}′ ${i}″` : `${f}′`;
+}
+
+/**
+ * Where a wall point should land: first an existing wall end within 1 ft, then straight/45° lines
+ * from the start point, then the nearest half foot. Always kept inside the room.
+ */
+export function snapWallPoint(p: Pt, start: Pt | null, ends: Pt[], W: number, L: number): Pt {
+  const inRoom = (q: Pt) => ({ x: Math.min(W, Math.max(0, q.x)), y: Math.min(L, Math.max(0, q.y)) });
+  const near = ends.find((e) => Math.hypot(e.x - p.x, e.y - p.y) <= 1);
+  if (near) return { ...near };
+  let q = { x: Math.round(p.x * 2) / 2, y: Math.round(p.y * 2) / 2 };
+  if (start) {
+    const dx = q.x - start.x, dy = q.y - start.y;
+    const ang = Math.abs((Math.atan2(dy, dx) * 180) / Math.PI);  // 0..180
+    const off = (a: number) => Math.abs(ang - a);
+    if (off(0) < 8 || off(180) < 8) q = { x: q.x, y: start.y };
+    else if (off(90) < 8) q = { x: start.x, y: q.y };
+    else if (off(45) < 6 || off(135) < 6) {
+      const d = (Math.abs(dx) + Math.abs(dy)) / 2;
+      q = { x: start.x + Math.sign(dx) * d, y: start.y + Math.sign(dy) * d };
+    }
+  }
+  return inRoom(q);
+}
 
 export const CHAIR_R = 0.75;   // an 18-inch chair
 const GAP = 1.0;               // chair centre sits 1 ft out from the table edge

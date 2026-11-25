@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canSit, occupancy, roomFromArea, seatOffsets, type SeatGuest } from './geometry';
+import { canSit, feetInches, occupancy, roomFromArea, seatOffsets, snapWallPoint, type SeatGuest } from './geometry';
 
 const g = (id: string, party = 1, seat: number | null = null): SeatGuest => ({ id, name: id, party_size: party, seat_index: seat, side: 'both' });
 
@@ -46,4 +46,21 @@ describe('occupancy', () => {
 
 it('estimates a 3:2 room from square footage', () => {
   expect(roomFromArea(3750)).toEqual({ width_ft: 50, length_ft: 75 });
+});
+
+describe('walls', () => {
+  it('formats lengths in feet and inches', () => { expect(feetInches(12.5)).toBe('12′ 6″'); expect(feetInches(30)).toBe('30′'); });
+  it('straightens nearly horizontal and vertical walls', () => {
+    expect(snapWallPoint({ x: 20.2, y: 10.9 }, { x: 5, y: 10 }, [], 60, 40)).toEqual({ x: 20, y: 10 });
+    expect(snapWallPoint({ x: 5.8, y: 30.1 }, { x: 5, y: 10 }, [], 60, 40)).toEqual({ x: 5, y: 30 });
+  });
+  it('snaps to 45 degrees', () => {
+    expect(snapWallPoint({ x: 15.3, y: 14.6 }, { x: 5, y: 5 }, [], 60, 40)).toEqual({ x: 15, y: 15 });
+  });
+  it('joins the end of an existing wall', () => {
+    expect(snapWallPoint({ x: 30.4, y: 17.6 }, { x: 10, y: 2 }, [{ x: 30, y: 18 }], 60, 40)).toEqual({ x: 30, y: 18 });
+  });
+  it('stays inside the room', () => {
+    expect(snapWallPoint({ x: 70, y: -3 }, null, [], 60, 40)).toEqual({ x: 60, y: 0 });
+  });
 });
