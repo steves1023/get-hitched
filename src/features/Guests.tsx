@@ -37,6 +37,7 @@ export default function Guests() {
     { key: 'party_size', label: 'Party size', type: 'number', min: 1 },
     { key: 'dietary', label: 'Dietary needs' },
     { key: 'email', label: 'Email', type: 'email' },
+    { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'How you know them, who they’re with, anything worth remembering' },
   ];
 
   const importCsv = (file: File) => {
@@ -102,13 +103,14 @@ export default function Guests() {
               {tableLabel(g.table_id) && <Badge tone="bs">🪑 {tableLabel(g.table_id)}</Badge>}
               {g.dietary && <span className="small muted">{g.dietary}</span>}
             </div>
+            {g.notes && <div className="small muted" style={{ marginTop: 3 }}>{g.notes}</div>}
           </div>
         </div>
       ))}
       <FormDrawer open={!!editing} title={editing?.id ? 'Edit guest' : 'Add guest'} fields={fields}
         initial={(editing ?? {}) as Record<string, unknown>} onClose={() => setEditing(null)}
         onSubmit={async (v) => {
-          const row = { name: v.name, side: v.side, rsvp: v.rsvp, party_size: v.party_size ?? 1, dietary: v.dietary, email: v.email } as Partial<Guest>;
+          const row = { name: v.name, side: v.side, rsvp: v.rsvp, party_size: v.party_size ?? 1, dietary: v.dietary, email: v.email, notes: v.notes } as Partial<Guest>;
           if (editing?.id) await m.update.mutateAsync({ id: editing.id, ...row }); else await m.insert.mutateAsync(row);
         }}
         onDelete={editing?.id ? () => m.remove.mutateAsync(editing.id!) : undefined} />

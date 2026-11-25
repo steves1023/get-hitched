@@ -9,17 +9,19 @@ import { ErrorNote, Loading } from '../components/ui';
 import ShareModal from '../components/ShareModal';
 import Billing from './Billing';
 
-const TABS: { to: string; module: Module | null; label: string; assignedLabel?: string }[] = [
+const TABS: { to: string; module: Module | null; label: string; assignedLabel?: string; coupleOnly?: boolean }[] = [
   { to: '', module: null, label: 'Overview' },
   { to: 'tasks', module: 'tasks', label: 'Tasks', assignedLabel: 'My Tasks' },
   { to: 'vendors', module: 'vendors', label: 'Vendors' },
   { to: 'budget', module: 'budget', label: 'Budget' },
   { to: 'guests', module: 'guests', label: 'Guests' },
+  { to: 'gifts', module: 'gifts', label: 'Gifts' },
   { to: 'seating', module: 'seating', label: 'Seating' },
   { to: 'day', module: 'day', label: 'Wedding Day', assignedLabel: 'Day Of' },
   { to: 'vision', module: 'vision', label: 'Vision Board' },
   { to: 'files', module: 'files', label: 'Files' },
   { to: 'hashtags', module: 'hashtags', label: '# Hashtags' },
+  { to: 'print', module: null, label: 'Print', coupleOnly: true },
 ];
 
 export default function WeddingLayout() {
@@ -36,7 +38,7 @@ export default function WeddingLayout() {
   const a = q.data;
   const days = daysUntil(a.wedding.wedding_date);
   const unpaid = !a.everPaid;
-  const visible = TABS.filter((t) => !t.module || a.levels[t.module] !== 'none');
+  const visible = TABS.filter((t) => (t.coupleOnly ? a.isCouple : !t.module || a.levels[t.module] !== 'none'));
   const label = (t: (typeof TABS)[number]) => (t.module && a.levels[t.module] === ('assigned' as Level) && t.assignedLabel) || t.label;
 
   return (

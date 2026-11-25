@@ -2,12 +2,12 @@
 //   supabase gen types typescript --local > src/lib/database.types.ts
 export type Role = 'owner' | 'partner' | 'planner' | 'family' | 'wedding_party' | 'vendor';
 export type Level = 'none' | 'assigned' | 'read' | 'edit';
-export const MODULES = ['tasks', 'vendors', 'budget', 'guests', 'seating', 'day', 'vision', 'files', 'hashtags'] as const;
+export const MODULES = ['tasks', 'vendors', 'budget', 'guests', 'gifts', 'seating', 'day', 'vision', 'files', 'hashtags'] as const;
 export type Module = (typeof MODULES)[number];
 
 export interface Wedding {
   id: string; partner1: string; partner2: string; last_names: string | null; wedding_date: string | null;
-  venue: string | null; theme: string | null; total_budget: number; notes: string; spicy_confirmed_at: string | null;
+  venue: string | null; theme: string | null; total_budget: number; notes: string; spicy_confirmed_at: string | null; print_theme?: Record<string, unknown>;
 }
 export interface Member { id: string; wedding_id: string; user_id: string; role: Role; display_name: string }
 export interface Task {
@@ -26,7 +26,7 @@ export interface Expense {
 }
 export interface Guest {
   id: string; wedding_id: string; name: string; side: 'partner1' | 'partner2' | 'both'; rsvp: 'pending' | 'yes' | 'no';
-  party_size: number; dietary: string | null; email: string | null; table_id: string | null; seat_index: number | null;
+  party_size: number; dietary: string | null; email: string | null; table_id: string | null; seat_index: number | null; notes: string | null;
 }
 export interface SeatingTable {
   id: string; wedding_id: string; label: string; shape: 'round' | 'rect'; capacity: number; x: number; y: number;
@@ -79,12 +79,12 @@ export const ROLE_LABEL: Record<Role, string> = {
 
 export const MODULE_LABEL: Record<Module, string> = {
   tasks: 'Tasks', vendors: 'Vendors', budget: 'Budget', guests: 'Guests', seating: 'Seating',
-  day: 'Wedding Day', vision: 'Vision Board', files: 'Files', hashtags: 'Hashtags',
+  day: 'Wedding Day', vision: 'Vision Board', files: 'Files', hashtags: 'Hashtags', gifts: 'Gifts',
 };
 
 /** Defaults the couple can override per person when inviting. */
-const ALL_EDIT: Record<Module, Level> = { tasks: 'edit', vendors: 'edit', budget: 'edit', guests: 'edit', seating: 'edit', day: 'edit', vision: 'edit', files: 'edit', hashtags: 'edit' };
-const DAY_ONLY: Record<Module, Level> = { tasks: 'none', vendors: 'none', budget: 'none', guests: 'none', seating: 'none', day: 'assigned', vision: 'none', files: 'none', hashtags: 'none' };
+const ALL_EDIT: Record<Module, Level> = { tasks: 'edit', vendors: 'edit', budget: 'edit', guests: 'edit', gifts: 'edit', seating: 'edit', day: 'edit', vision: 'edit', files: 'edit', hashtags: 'edit' };
+const DAY_ONLY: Record<Module, Level> = { tasks: 'none', vendors: 'none', budget: 'none', guests: 'none', gifts: 'none', seating: 'none', day: 'assigned', vision: 'none', files: 'none', hashtags: 'none' };
 
 /** Defaults when inviting. Parents and Planners start with everything (the couple can hide tabs);
  *  Wedding Party is fixed to their part of the Wedding Day tab. */
@@ -103,3 +103,16 @@ export const PHASES: Record<DayItem['phase'], string> = {
 export const VISION_CATEGORIES: Record<string, string> = {
   flowers: 'Flowers & Florals', venue: 'Venue & Decor', attire: 'Dress & Attire', food: 'Cake & Food', palette: 'Color Palette',
 };
+
+export interface Gift {
+  id: string; wedding_id: string; description: string;
+  kind: 'registry' | 'cash' | 'check' | 'gift_card' | 'item' | 'experience' | 'other';
+  amount: number | null; received_on: string | null; occasion: 'engagement' | 'shower' | 'wedding' | 'other';
+  from_other: string | null; notes: string | null;
+  thank_you_status: 'none' | 'drafted' | 'sent'; thank_you_text: string | null; thank_you_sent_on: string | null;
+}
+export interface GiftGiver { gift_id: string; guest_id: string; wedding_id: string }
+export const GIFT_KINDS: Record<Gift['kind'], string> = {
+  registry: 'Registry', cash: 'Cash', check: 'Check', gift_card: 'Gift card', item: 'Item', experience: 'Experience', other: 'Other',
+};
+export const OCCASIONS: Record<Gift['occasion'], string> = { engagement: 'Engagement', shower: 'Shower', wedding: 'Wedding', other: 'Other' };

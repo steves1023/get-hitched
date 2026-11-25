@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './lib/auth';
 import Login from './pages/Login';
@@ -19,6 +19,8 @@ import WeddingDay from './features/WeddingDay';
 import Vision from './features/Vision';
 import Files from './features/Files';
 import Hashtags from './features/Hashtags';
+import Gifts from './features/Gifts';
+const Print = lazy(() => import('./features/Print'));
 import { ModuleGate } from './pages/ModuleGate';
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -54,6 +56,8 @@ export default function App() {
         <Route path="vision" element={<ModuleGate module="vision"><Vision /></ModuleGate>} />
         <Route path="files" element={<ModuleGate module="files"><Files /></ModuleGate>} />
         <Route path="hashtags" element={<ModuleGate module="hashtags"><Hashtags /></ModuleGate>} />
+        <Route path="gifts" element={<ModuleGate module="gifts"><Gifts /></ModuleGate>} />
+        <Route path="print" element={<Suspense fallback={<p className="muted">Loading…</p>}><Print /></Suspense>} />
         <Route path="settings" element={<Settings />} />
         <Route path="billing" element={<Billing />} />
       </Route>
