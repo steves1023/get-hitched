@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 import { AccessProvider, useLoadAccess } from '../lib/access';
-import { useAuth } from '../lib/auth';
-import { supabase } from '../lib/supabase';
+import { signOut, useAuth } from '../lib/auth';
 import { daysUntil, fullDate } from '../lib/format';
 import type { Level, Module } from '../lib/types';
 import { ErrorNote, Loading } from '../components/ui';
@@ -50,7 +49,7 @@ export default function WeddingLayout() {
           {a.isCouple && a.hasPass && <button className="hbtn" onClick={() => setShare(true)}>⇄ Share</button>}
           {a.isCouple && !unpaid && <Link className="hbtn" to="settings">⚙ Settings</Link>}
           {a.isCouple && !unpaid && <Link className="hbtn" to="billing">💳 Billing</Link>}
-          <button className="hbtn" onClick={() => supabase.auth.signOut()}>Sign Out</button>
+          <button className="hbtn" onClick={() => signOut()}>Sign Out</button>
         </div>
       </header>
       {days !== null && (

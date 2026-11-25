@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../lib/auth';
+import { signOut, useAuth } from '../lib/auth';
 import { friendly } from '../lib/errors';
 
 export default function AcceptInvite() {
@@ -36,7 +36,7 @@ export default function AcceptInvite() {
         ) : error ? (
           <>
             <p className="err">{error}</p>
-            <button className="btn g" onClick={() => supabase.auth.signOut()}>Sign out</button>
+            <button className="btn g" onClick={() => signOut()}>Sign out</button>
           </>
         ) : <p>Joining the wedding…</p>}
       </div>
