@@ -9,10 +9,12 @@ import { MODULES, MODULE_LABEL, PRICING, ROLE_LABEL, ROLE_PRESETS, seatLimit, se
 import { Badge, Modal } from './ui';
 
 type InvitableRole = Exclude<Role, 'owner'>;
-const ROLES: InvitableRole[] = ['partner', 'planner', 'family', 'wedding_party', 'vendor'];
+// Vendor still exists in the database, but couples invite only these four.
+const ROLES: InvitableRole[] = ['partner', 'planner', 'family', 'wedding_party'];
 const SPOT_NAME: Record<SeatType, string> = { full: PRICING.fullName, party: PRICING.partyName };
 const roleOption = (r: InvitableRole) => {
   const t = seatTypeOf(r);
+  if (r === 'partner') return 'The person you’re marrying · free';
   return t === 'full' ? `${ROLE_LABEL[r]} · uses a ${SPOT_NAME.full} spot (${PRICING.full})` : `${ROLE_LABEL[r]} · free`;
 };
 const LEVELS: { value: Level; label: string }[] = [
@@ -115,6 +117,9 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
   const now = new Date().toISOString();
   const used = (t: SeatType) => (members.data ?? []).filter((m) => seatTypeOf(m.role) === t).length
     + pending.filter((i) => i.expires_at > now && seatTypeOf(i.role) === t).length;
+  const hasPartner = (members.data ?? []).some((m) => m.role === 'partner')
+    || pending.some((i) => i.role === 'partner' && i.expires_at > now);
+  const roleChoices = ROLES.filter((r) => r !== 'partner' || !hasPartner);
   const roleType = seatTypeOf(role);
   const full = !!roleType && used(roleType) >= seatLimit(hasPass, entitlement, roleType);
 
@@ -164,7 +169,7 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
           <h3 className="ct" style={{ marginTop: 18 }}>Invite someone</h3>
           <p className="small" style={{ marginBottom: 10 }}>
             Spots in use: <b>{used('full')} of {seatLimit(hasPass, entitlement, 'full')}</b> {PRICING.fullName} ·{' '}
-            <b>{used('party')}</b> {PRICING.partyName} (free). Your partner is free too; open invites hold a spot.
+            <b>{used('party')}</b> {PRICING.partyName} (free). The person you’re marrying joins free. Open invites hold a spot.
           </p>
           {full && roleType === 'full' && (
             <p className="small" style={{ marginBottom: 10 }}>
@@ -180,11 +185,11 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
             </div>
             <label className="field"><span>Role</span>
               <select value={role} onChange={(e) => setRole(e.target.value as InvitableRole)}>
-                {ROLES.map((r) => <option key={r} value={r}>{roleOption(r)}</option>)}
+                {roleChoices.map((r) => <option key={r} value={r}>{roleOption(r)}</option>)}
               </select>
             </label>
             <p className="muted small" style={{ marginBottom: 8 }}>
-              {role === 'partner' ? 'Partners can see and change everything.'
+              {role === 'partner' ? 'For your fiancé(e), the other half of the couple. They get the same full access as you, at no extra cost. One per wedding.'
                 : roleType === 'party' ? 'Sees only the Wedding Day tab: items for the wedding party and items you assign to them.'
                 : 'Starts with full access. Hide any tab you’d rather they didn’t see.'}
             </p>

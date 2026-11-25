@@ -1,10 +1,10 @@
 // POST { invite_id } -> { link }
 // Emails a magic link that signs the invitee in and lands them on /invite/:token.
 // The invite row itself is created by the couple's client; RLS ensures only the couple can read it here.
-import { corsHeaders, json } from '../_shared/cors.ts';
+import { corsHeaders, json, withErrors } from '../_shared/cors.ts';
 import { anonClient, requireUser } from '../_shared/clients.ts';
 
-Deno.serve(async (req) => {
+Deno.serve(withErrors(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   const auth = await requireUser(req);
@@ -33,4 +33,4 @@ Deno.serve(async (req) => {
     return json({ link, emailed: false });
   }
   return json({ link, emailed: true });
-});
+}));

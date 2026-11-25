@@ -68,7 +68,7 @@ export interface Summary {
 }
 
 export const ROLE_LABEL: Record<Role, string> = {
-  owner: 'Owner', partner: 'Partner', planner: 'Planner', family: 'Family', wedding_party: 'Wedding party', vendor: 'Vendor',
+  owner: 'Owner', partner: 'Partner (marrying)', planner: 'Planner', family: 'Family', wedding_party: 'Wedding party', vendor: 'Vendor',
 };
 
 export const MODULE_LABEL: Record<Module, string> = {

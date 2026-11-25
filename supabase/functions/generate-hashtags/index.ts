@@ -1,6 +1,6 @@
 // POST { wedding_id, vibe, keywords? } -> { hashtags: string[] }
 // Generates wedding hashtags with Gemini. The API key never reaches the browser.
-import { corsHeaders, json } from '../_shared/cors.ts';
+import { corsHeaders, json, withErrors } from '../_shared/cors.ts';
 import { adminClient, requireUser } from '../_shared/clients.ts';
 
 const VIBES: Record<string, string> = {
@@ -14,7 +14,7 @@ const VIBES: Record<string, string> = {
 const FREE_TOTAL = 3;
 const PASS_PER_DAY = 25;
 
-Deno.serve(async (req) => {
+Deno.serve(withErrors(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   const auth = await requireUser(req);
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     );
   }
   return json({ hashtags: clean });
-});
+}));
 
 /** Keywords are free text from the couple: keep letters, numbers and simple separators, max 120 characters. */
 function cleanKeywords(raw: unknown): string {

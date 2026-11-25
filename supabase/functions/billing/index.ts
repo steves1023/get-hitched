@@ -3,14 +3,14 @@
 //      (Wedding Party spots are free and need no checkout.)
 // POST { action: 'portal', wedding_id }          -> { url }  Stripe customer portal (receipts)
 import Stripe from 'npm:stripe@17.7.0';
-import { corsHeaders, json } from '../_shared/cors.ts';
+import { corsHeaders, json, withErrors } from '../_shared/cors.ts';
 import { adminClient, requireUser } from '../_shared/clients.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(withErrors(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   const auth = await requireUser(req);
@@ -78,4 +78,4 @@ Deno.serve(async (req) => {
   }
 
   return json({ error: 'BAD_REQUEST' }, 400);
-});
+}));

@@ -90,7 +90,7 @@ export default function Billing() {
           </div>
           <div className="card">
             <h2 className="ct">Bringing others in later</h2>
-            <p className="small" style={{ marginBottom: 10 }}>After you activate, invite people from Share. Your partner is always free.</p>
+            <p className="small" style={{ marginBottom: 10 }}>After you activate, invite people from Share. The person you’re marrying joins free.</p>
             {(['full', 'party'] as SeatType[]).map((t) => (
               <p key={t} style={{ marginBottom: 8 }}><b>{SPOTS[t].name}</b> · {SPOTS[t].price}<br /><span className="small muted">{SPOTS[t].blurb}</span></p>
             ))}

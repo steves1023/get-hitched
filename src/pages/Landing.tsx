@@ -160,10 +160,11 @@ export default function Landing() {
               <div>
                 <div className="amt">{PRICING.party}</div>
                 <b>{PRICING.partyName}</b>
-                <p>The wedding day schedule: party moments and anything you assign to them. Invite your whole party and your vendors at no cost.</p>
+                <p>The wedding day schedule: party moments and anything you assign to them. Invite your whole wedding party at no cost.</p>
               </div>
               <div className="lp-faq">
-                <div><b>Does my partner cost extra?</b><span>No. {PRICING.passName} covers both of you.</span></div>
+                <div><b>Does the person I’m marrying cost extra?</b><span>No. {PRICING.passName} covers both of you, each with your own login.</span></div>
+                <div><b>Can I change what a parent or planner sees?</b><span>Yes. Hide any tab for any person, any time.</span></div>
               </div>
             </div>
           </div>
