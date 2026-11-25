@@ -56,7 +56,26 @@ Deno.serve(withErrors(async (req) => {
     return json({ link, emailed: true });
   }
 
-  // Fallback: Supabase's own sign-in email (rate-limited on the built-in sender).
+  // No Resend: use Supabase's own emails (sent through your SMTP, e.g. Gmail, if you set one up).
+  // New people get the "Invite user" template, personalised through these fields; existing accounts get "Magic Link".
+  const [{ data: w }, { data: me }] = await Promise.all([
+    auth.supa.from('weddings').select('partner1, partner2, wedding_date, venue').eq('id', invite.wedding_id).single(),
+    auth.supa.from('wedding_members').select('display_name').eq('wedding_id', invite.wedding_id).eq('user_id', auth.user.id).single(),
+  ]);
+  const date = w?.wedding_date
+    ? new Date(`${w.wedding_date}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+  const invited = await adminClient().auth.admin.inviteUserByEmail(invite.email, {
+    redirectTo: link,
+    data: {
+      invited_by: me?.display_name ?? 'The couple', invitee_name: invite.display_name,
+      couple: w ? `${w.partner1} & ${w.partner2}` : '', wedding_when: [date, w?.venue].filter(Boolean).join(' · '),
+    },
+  });
+  if (!invited.error) return json({ link, emailed: true });
+  if (/rate limit/i.test(invited.error.message)) return json({ link, emailed: false, reason: 'EMAIL_RATE_LIMIT' });
+  if (!/already|registered|exists/i.test(invited.error.message)) console.error('inviteUserByEmail failed', invited.error.message);
+
+  // They already have an account: send the sign-in email, which lands on the invitation.
   const { error } = await anonClient().auth.signInWithOtp({
     email: invite.email,
     options: { emailRedirectTo: link, shouldCreateUser: true },
