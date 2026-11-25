@@ -29,13 +29,26 @@ Deno.serve(withErrors(async (req) => {
   const { data: hasPass } = await admin.rpc('has_pass', { w: wedding_id });
 
   // Reuse the Stripe customer after the first purchase so receipts stay together in the portal.
-  const customer = ent?.stripe_customer_id
-    ? { customer: ent.stripe_customer_id as string }
+  // A saved customer can be unusable: made in test mode before going live, or deleted in Stripe.
+  // Then forget it, and checkout creates a fresh one (the webhook saves the new id).
+  let customerId: string | null = ent?.stripe_customer_id ?? null;
+  if (customerId) {
+    try {
+      const c = await stripe.customers.retrieve(customerId);
+      if ((c as { deleted?: boolean }).deleted) customerId = null;
+    } catch (e) {
+      if ((e as { code?: string }).code !== 'resource_missing') throw e;
+      customerId = null;
+    }
+    if (!customerId) await admin.from('entitlements').update({ stripe_customer_id: null }).eq('wedding_id', wedding_id);
+  }
+  const customer = customerId
+    ? { customer: customerId }
     : { customer_email: auth.user.email, customer_creation: 'always' as const };
 
   if (action === 'portal') {
-    if (!ent?.stripe_customer_id) return json({ error: 'NO_CUSTOMER' }, 400);
-    const session = await stripe.billingPortal.sessions.create({ customer: ent.stripe_customer_id, return_url: back });
+    if (!customerId) return json({ error: 'NO_CUSTOMER' }, 400);
+    const session = await stripe.billingPortal.sessions.create({ customer: customerId, return_url: back });
     return json({ url: session.url });
   }
 
