@@ -33,7 +33,7 @@ select throws_ok($$insert into public.invites (wedding_id, email, display_name, 
 select lives_ok($$insert into public.invites (wedding_id, email, display_name, role) values ('10000000-0000-0000-0000-0000000000f1','p@x.dev','P','partner')$$,
   'unpaid: can still invite their partner');
 select is(public.my_access('10000000-0000-0000-0000-0000000000f2', 'tasks'), 'read', 'expired: edit becomes read');
-select is((select count(*)::int from public.tasks where wedding_id = '10000000-0000-0000-0000-0000000000f2'), 1, 'expired: data still readable');
+select is((select count(*)::int from public.tasks where wedding_id = '10000000-0000-0000-0000-0000000000f2' and template_key is null), 1, 'expired: data still readable');
 select throws_ok($$insert into public.tasks (wedding_id, title) values ('10000000-0000-0000-0000-0000000000f2', 'x')$$,
   '42501', null, 'expired: cannot add');
 select throws_ok($$select public.complete_task('30000000-0000-0000-0000-0000000000f2', true)$$,
