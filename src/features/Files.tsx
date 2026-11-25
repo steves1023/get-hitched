@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { objectPath } from '../lib/storage';
 import { friendly } from '../lib/errors';
 import { bytes } from '../lib/format';
-import type { FileRow } from '../lib/types';
+import type { FileRow, Vendor } from '../lib/types';
 import { Empty, ErrorNote, Loading, PageHeader } from '../components/ui';
 
 const MAX = 10 * 1024 * 1024;
@@ -16,6 +16,8 @@ export default function Files() {
   const canEdit = levels.files === 'edit';
   const files = useRows<FileRow>('files', wedding.id, 'created_at', false);
   const m = useTableMutations<FileRow>('files', wedding.id);
+  const vendors = useRows<Vendor>('vendors', wedding.id, 'name', true, levels.vendors !== 'none');
+  const vendorName = (id: string | null) => (id ? vendors.data?.find((v) => v.id === id)?.name : undefined);
   const [over, setOver] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -77,7 +79,10 @@ export default function Files() {
         ) : (files.data ?? []).map((f) => (
           <div className="fi" key={f.id}>
             <div className="th" aria-hidden>{icon(f.mime_type)}</div>
-            <div style={{ flex: 1, minWidth: 0 }}><b className="small" style={{ overflowWrap: 'anywhere' }}>{f.name}</b></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <b className="small" style={{ overflowWrap: 'anywhere' }}>{f.name}</b>
+              {vendorName(f.vendor_id) && <div><span className="badge bw">🏷 {vendorName(f.vendor_id)}</span></div>}
+            </div>
             <span className="small muted">{bytes(f.size_bytes)}</span>
             <button className="btn g sm" aria-label={`Download ${f.name}`} onClick={() => download(f)}>↓</button>
             {canEdit && <button className="btn danger sm" aria-label={`Delete ${f.name}`} onClick={() => remove(f)}>×</button>}

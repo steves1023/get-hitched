@@ -32,6 +32,7 @@ const MESSAGES: Record<string, string> = {
   'email rate limit exceeded': 'Too many sign-in emails were sent in the last hour. Try again later, or use Continue with Google.',
   over_email_send_rate_limit: 'Too many sign-in emails were sent in the last hour. Try again later, or use Continue with Google.',
   NO_CUSTOMER: 'There are no receipts for this wedding yet. They appear here after your first purchase.',
+  FILE_VENDOR_MISMATCH: 'That vendor belongs to a different wedding.',
   PROMO_INVALID: 'That code isn’t valid or has expired. Check the spelling and try again.',
   PROMO_ALREADY_USED: 'This wedding has already used that code.',
   ALREADY_HAS_PASS: 'This wedding already has the Wedding Pass, so that code isn’t needed. Codes for extra people still work here.',

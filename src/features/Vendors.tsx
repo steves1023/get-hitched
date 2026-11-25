@@ -3,8 +3,9 @@ import { useAccess } from '../lib/access';
 import { useRows, useTableMutations } from '../hooks/data';
 import { supabase } from '../lib/supabase';
 import { money } from '../lib/format';
-import { TASK_CATEGORIES, VENDOR_STATUS, type Vendor, type VendorPayment } from '../lib/types';
+import { TASK_CATEGORIES, VENDOR_STATUS, type Vendor, type VendorPayment, FileRow } from '../lib/types';
 import { Badge, Empty, ErrorNote, FormDrawer, Loading, PageHeader, type FieldDef } from '../components/ui';
+import VendorFiles from './files/VendorFiles';
 
 export default function Vendors() {
   const { wedding, levels } = useAccess();
@@ -13,6 +14,10 @@ export default function Vendors() {
   const editMoney = levels.budget === 'edit';
   const vendors = useRows<Vendor>('vendors', wedding.id, 'name');
   const payments = useRows<VendorPayment>('vendor_payments', wedding.id, 'created_at', true, seeMoney);
+  // Attachments need the Files tab: visible with read access, editable with edit access.
+  const seeFiles = levels.files === 'read' || levels.files === 'edit';
+  const files = useRows<FileRow>('files', wedding.id, 'created_at', false, seeFiles);
+  const fileCount = (id: string) => (files.data ?? []).filter((f) => f.vendor_id === id).length;
   const m = useTableMutations<Vendor>('vendors', wedding.id);
   const pm = useTableMutations<VendorPayment>('vendor_payments', wedding.id);
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
@@ -61,6 +66,7 @@ export default function Vendors() {
                 {v.url && <div className="vd">🔗 {v.url.replace(/^https?:\/\//, '')}</div>}
                 {seeMoney && p && <div className="vd">💰 {money(p.total)} total · {money(p.paid)} paid</div>}
                 {v.notes && <div className="vd" style={{ color: 'var(--muted)' }}>{v.notes}</div>}
+                {seeFiles && fileCount(v.id) > 0 && <div className="vd">📎 {fileCount(v.id)} file{fileCount(v.id) === 1 ? '' : 's'}</div>}
               </button>
             );
           })}
@@ -68,6 +74,7 @@ export default function Vendors() {
       )}
       <FormDrawer open={!!editing} title={editing?.id ? 'Edit vendor' : 'Add vendor'} fields={fields} initial={editing ?? {}}
         onClose={() => setEditing(null)}
+        extra={() => seeFiles && <VendorFiles weddingId={wedding.id} vendorId={(editing?.id as string) ?? null} files={files.data ?? []} canEdit={levels.files === 'edit'} />}
         onSubmit={async (v) => {
           const row = { name: v.name, category: v.category, status: v.status, contact_name: v.contact_name, phone: v.phone, email: v.email, url: v.url, notes: v.notes } as Partial<Vendor>;
           const saved = editing?.id ? await m.update.mutateAsync({ id: editing.id as string, ...row }) : await m.insert.mutateAsync(row);

@@ -47,7 +47,7 @@ export interface DayItem {
 }
 export interface DayItemAssignee { day_item_id: string; member_id: string; wedding_id: string }
 export interface VisionItem { id: string; wedding_id: string; storage_path: string; caption: string | null; category: string }
-export interface FileRow { id: string; wedding_id: string; storage_path: string; name: string; size_bytes: number; mime_type: string | null; created_at: string }
+export interface FileRow { id: string; wedding_id: string; storage_path: string; name: string; size_bytes: number; mime_type: string | null; created_at: string; vendor_id: string | null }
 export interface Hashtag { id: string; wedding_id: string; tag: string; vibe: string | null; starred: boolean }
 export interface Invite {
   id: string; wedding_id: string; email: string; display_name: string; role: Role;
