@@ -67,6 +67,7 @@ Deno.serve(withErrors(async (req) => {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: [{ price, quantity: start, adjustable_quantity: { enabled: true, minimum: 1, maximum: 100 } }],
+      allow_promotion_codes: true,
       ...customer,
       invoice_creation: { enabled: true },
       client_reference_id: wedding_id,
