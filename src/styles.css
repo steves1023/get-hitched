@@ -130,12 +130,13 @@ textarea.notes{width:100%;padding:12px 14px;border:1.5px solid var(--border);bor
 .gtable tr.head-row:hover td{background:#FFFCF8}
 .gtable tr.member-row{cursor:pointer}
 .gtable tr.member-row td{background:#FCFAF6}
-.gtable tr.member-row td.name-cell{padding-left:44px}
+.gtable tr.member-row td.name-cell{padding-left:62px}
 .gtable tr.dim td{opacity:.5}
 .gtable tr.hit td{background:var(--gold-l)}
 .gtable select{padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:#fff;font:inherit;font-size:.78rem}
-.exp{background:none;border:1px solid var(--border2);border-radius:6px;width:22px;height:22px;flex:0 0 22px;line-height:1;color:var(--warm);font-size:.75rem;padding:0;cursor:pointer;margin-right:8px}
-.exp-spacer{display:inline-block;flex:0 0 30px;width:30px}
+.exp{background:var(--sage-l);border:1.5px solid var(--sage);border-radius:8px;width:32px;height:32px;flex:0 0 32px;display:inline-flex;align-items:center;justify-content:center;color:var(--sage-d);padding:0;cursor:pointer;margin-right:10px;margin-top:-4px}
+.exp:hover{background:var(--sage);color:#fff}
+.exp-spacer{display:inline-block;flex:0 0 42px;width:42px}
 .fam-badge{display:inline-block;font-size:.65rem;padding:2px 8px;border-radius:20px;background:var(--sage-l);color:var(--sage-d);font-weight:600;margin-left:6px;white-space:nowrap}
 .fam-names{display:block;font-size:.74rem;color:var(--muted);margin-top:2px}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}

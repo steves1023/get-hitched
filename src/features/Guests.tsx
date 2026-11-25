@@ -200,7 +200,11 @@ export default function Guests() {
                       <td className="name-cell">
                         <div style={{ display: 'flex', alignItems: 'flex-start', minWidth: 200 }}>
                           {fam ? <button className="exp" aria-expanded={expanded} aria-label={`${expanded ? 'Hide' : 'Show'} ${gr.head.name}’s family`}
-                            onClick={(e) => { e.stopPropagation(); toggle(gr.head.id); }}>{expanded ? '▾' : '▸'}</button> : <span className="exp-spacer" />}
+                            onClick={(e) => { e.stopPropagation(); toggle(gr.head.id); }}>
+                            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform .15s' }}>
+                              <path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button> : <span className="exp-spacer" />}
                           <div>
                             <b>{gr.head.name}</b>
                             {fam > 0 && <span className="fam-badge">Family · {fam + 1}</span>}
