@@ -29,6 +29,8 @@ const MESSAGES: Record<string, string> = {
   HOUSEHOLD_INVALID: 'That person can’t be added to this family.',
   HOUSEHOLD_HAS_MEMBERS: 'This guest has family members of their own, so they can’t join another family.',
   HOUSEHOLD_SELF: 'A guest can’t be their own family member.',
+  'email rate limit exceeded': 'Too many sign-in emails were sent in the last hour. Try again later, or use Continue with Google.',
+  over_email_send_rate_limit: 'Too many sign-in emails were sent in the last hour. Try again later, or use Continue with Google.',
   PROMO_INVALID: 'That code isn’t valid or has expired. Check the spelling and try again.',
   PROMO_ALREADY_USED: 'This wedding has already used that code.',
   ALREADY_HAS_PASS: 'This wedding already has the Wedding Pass, so that code isn’t needed. Codes for extra people still work here.',

@@ -77,7 +77,9 @@ export default function ShareModal({ open, onClose }: { open: boolean; onClose: 
     setBusy(false);
     setLink(inviteLink(inv.token));
     if (res.error) setMsg(`Invite created, but the email didn’t send (${await functionError(res.error)}). Copy the link below and send it yourself.`);
-    else setMsg(res.data?.emailed ? `Invite emailed to ${email}. You can also send them the link below.` : 'Invite created. The email didn’t send, so copy the link below.');
+    else if (res.data?.emailed) setMsg(`Invite emailed to ${email}. You can also send them the link below.`);
+    else if (res.data?.reason === 'EMAIL_RATE_LIMIT') setMsg('Invite created, but the email limit for this hour was reached. Copy the link below and text or email it yourself.');
+    else setMsg('Invite created. The email didn’t send, so copy the link below.');
     setEmail(''); setName('');
     qc.invalidateQueries({ queryKey: ['invites', wedding.id] });
   };
