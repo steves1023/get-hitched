@@ -66,7 +66,7 @@ export default function Print() {
       wedding: { partner1: wedding.partner1, partner2: wedding.partner2, wedding_date: wedding.wedding_date, venue: wedding.venue },
       dayItems: (day.data ?? []).map((d) => ({ start_time: d.start_time, title: d.title, who: d.who, location: d.location, duration_min: d.duration_min, phase: d.phase, audience: d.audience })),
       tables: (tables.data ?? []).map((t) => ({ id: t.id, label: t.label, capacity: t.capacity })),
-      guests: (guests.data ?? []).filter((g) => g.rsvp !== 'no').map((g) => ({ id: g.id, name: g.name, party_size: g.party_size, table_id: g.table_id })),
+      guests: (guests.data ?? []).filter((g) => g.rsvp !== 'no').map((g) => ({ id: g.id, name: g.name, party_size: g.party_size, table_id: g.table_id, couple: !!g.couple_role })),
       notes,
     };
   }, [wedding, day.data, tables.data, guests.data, gifts.data, givers.data, notesWhich]);

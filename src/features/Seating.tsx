@@ -88,7 +88,8 @@ export default function Seating() {
     }
     return m;
   }, [list, all]);
-  const unassigned = all.filter((g) => !g.table_id && g.rsvp !== 'no');
+  // The couple comes first so the sweetheart table is quick to fill.
+  const unassigned = all.filter((g) => !g.table_id && g.rsvp !== 'no').sort((a, b) => Number(!!b.couple_role) - Number(!!a.couple_role));
   const filled = (t: SeatingTable) => (seatsByTable[t.id] ?? []).filter(Boolean).length;
 
   if (!hasPass && isCouple && list.length === 0) return (
@@ -442,7 +443,7 @@ export default function Seating() {
             <button key={g.id} type="button" className={`chip${held?.id === g.id ? ' sel' : ''}`} disabled={!canSeat}
               style={{ background: SIDE_FILL[g.side], color: SIDE_TEXT[g.side] }}
               onClick={() => { setHeld(held?.id === g.id ? null : g); setPick(null); }}>
-              {g.name}{g.party_size > 1 ? ` +${g.party_size - 1}` : ''}
+              {g.name}{g.couple_role ? ' · couple' : ''}{g.party_size > 1 ? ` +${g.party_size - 1}` : ''}
             </button>
           ))}
           {canSeat && unassigned.length > 0 && <p className="small muted">Tap a name, then tap an empty chair. Or tap any chair’s <b>+</b> and pick from the list.</p>}

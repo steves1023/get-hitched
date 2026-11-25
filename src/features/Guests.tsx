@@ -39,7 +39,7 @@ export default function Guests() {
   const [importMsg, setImportMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const all = guests.data ?? [];
+  const all = useMemo(() => (guests.data ?? []).filter((g) => !g.couple_role), [guests.data]);
   const tableLabel = (id: string | null) => tables.data?.find((t) => t.id === id)?.label ?? '';
   const sideLabel = (s: Guest['side']) => (s === 'partner1' ? wedding.partner1 : s === 'partner2' ? wedding.partner2 : 'Both');
   const place = (g: Guest) => [g.city, g.state].filter(Boolean).join(', ');

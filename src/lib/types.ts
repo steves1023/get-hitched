@@ -29,6 +29,8 @@ export interface Guest {
   party_size: number; dietary: string | null; email: string | null; table_id: string | null; seat_index: number | null; notes: string | null;
   address1: string | null; address2: string | null; city: string | null; state: string | null;
   postal_code: string | null; country: string | null; primary_guest_id: string | null;
+  /** Set on the two hidden rows that let the couple be seated. They never appear as guests. */
+  couple_role: 'partner1' | 'partner2' | null;
 }
 export interface SeatingTable {
   id: string; wedding_id: string; label: string; shape: 'round' | 'rect'; capacity: number; x: number; y: number;

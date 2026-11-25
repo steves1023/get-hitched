@@ -8,7 +8,7 @@ export interface PrintData {
   wedding: { partner1: string; partner2: string; wedding_date: string | null; venue: string | null };
   dayItems: { start_time: string; title: string; who: string | null; location: string | null; duration_min: number | null; phase: string; audience: string }[];
   tables: { id: string; label: string; capacity: number }[];
-  guests: { id: string; name: string; party_size: number; table_id: string | null }[];
+  guests: { id: string; name: string; party_size: number; table_id: string | null; couple?: boolean }[];
   notes: { id: string; text: string; to: string }[];
 }
 export interface DocOptions {
@@ -182,7 +182,7 @@ function TableCards({ data, theme, opts }: { data: PrintData; theme: PrintTheme;
 function PlaceCards({ data, theme }: { data: PrintData; theme: PrintTheme }) {
   const { c, heading, body } = useStyle(theme);
   const label = (id: string | null) => data.tables.find((t) => t.id === id)?.label ?? '';
-  const seated = data.guests.filter((g) => g.table_id).sort((a, b) => a.name.localeCompare(b.name));
+  const seated = data.guests.filter((g) => g.table_id && !g.couple).sort((a, b) => a.name.localeCompare(b.name));
   const [pw, ph] = theme.paper === 'a4' ? [595, 842] : [612, 792];
   const cw = 3.5 * IN, ch = 2 * IN, cols = 2, rows = 5;
   const mx = (pw - cw * cols) / 2, my = (ph - ch * rows) / 2;

@@ -66,7 +66,7 @@ export default function Gifts() {
         </div>
       ))}
 
-      <GiftDrawer gift={editing} guests={guests.data ?? []} initialGivers={editing?.id ? giverIds(editing.id) : []}
+      <GiftDrawer gift={editing} guests={(guests.data ?? []).filter((g) => !g.couple_role)} initialGivers={editing?.id ? giverIds(editing.id) : []}
         onClose={() => setEditing(null)}
         onSave={async (row, giverList) => {
           const saved = editing?.id ? await m.update.mutateAsync({ id: editing.id, ...row }) : await m.insert.mutateAsync(row);
