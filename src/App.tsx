@@ -23,6 +23,8 @@ import Gifts from './features/Gifts';
 const Print = lazy(() => import('./features/Print'));
 const Website = lazy(() => import('./features/Website'));
 const PublicSite = lazy(() => import('./pages/PublicSite'));
+import ResetPassword from './pages/ResetPassword';
+import PasswordPrompt from './components/PasswordPrompt';
 import { ModuleGate } from './pages/ModuleGate';
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -42,8 +44,11 @@ function Root() {
 
 export default function App() {
   return (
+    <>
+    <PasswordPrompt />
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/invite/:token" element={<AcceptInvite />} />
       <Route path="/site/:slug" element={<Suspense fallback={null}><PublicSite /></Suspense>} />
       <Route path="/" element={<Root />} />
@@ -67,5 +72,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

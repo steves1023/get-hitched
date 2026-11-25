@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 import { AccessProvider, useLoadAccess } from '../lib/access';
 import { signOut, useAuth } from '../lib/auth';
+import PasswordDialog from '../components/PasswordDialog';
 import { daysUntil, fullDate } from '../lib/format';
 import type { Level, Module } from '../lib/types';
 import { ErrorNote, Loading } from '../components/ui';
@@ -29,6 +30,7 @@ export default function WeddingLayout() {
   const { session } = useAuth();
   const q = useLoadAccess(weddingId!, session!.user.id);
   const [share, setShare] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
 
   if (q.isLoading) return <main id="content"><Loading /></main>;
   if (q.error) return <main id="content"><ErrorNote error={q.error} /></main>;
@@ -50,6 +52,7 @@ export default function WeddingLayout() {
           {a.isCouple && a.hasPass && <button className="hbtn" onClick={() => setShare(true)}>⇄ Share</button>}
           {a.isCouple && !unpaid && <Link className="hbtn" to="settings">⚙ Settings</Link>}
           {a.isCouple && !unpaid && <Link className="hbtn" to="billing">💳 Billing</Link>}
+          <button className="hbtn" onClick={() => setPwOpen(true)}>Password</button>
           <button className="hbtn" onClick={() => signOut()}>Sign Out</button>
         </div>
       </header>
@@ -86,6 +89,7 @@ export default function WeddingLayout() {
         </>
       )}
       {a.isCouple && a.hasPass && <ShareModal open={share} onClose={() => setShare(false)} />}
+      <PasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
     </AccessProvider>
   );
 }

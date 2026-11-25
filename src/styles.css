@@ -145,3 +145,5 @@ textarea.notes{width:100%;padding:12px 14px;border:1.5px solid var(--border);bor
 .seg{display:inline-flex;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
 .seg button{background:#fff;border:none;padding:7px 12px;font:inherit;font-size:.78rem;font-weight:600;color:var(--warm)}
 .seg button.on{background:var(--blush-d);color:#fff}
+
+.linkish{display:block;margin:10px auto 0;background:none;border:none;color:var(--blush-d);font:inherit;font-size:.8rem;text-decoration:underline;cursor:pointer}
